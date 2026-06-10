@@ -1,0 +1,24 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Kubeconfigs y secretos locales
+*.kubeconfig
+kubeconfig*
+*.pem
+*.key
+*.p12
+.env
+.env.*
+
+# Binarios y temporales de laboratorio
+*.log
+*.tmp
+*.bak
+*.swp
+tmp/
+bin/
+dist/
