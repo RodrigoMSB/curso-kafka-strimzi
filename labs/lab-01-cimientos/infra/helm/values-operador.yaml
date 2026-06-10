@@ -1,0 +1,26 @@
+# Values de referencia del instructor para el Strimzi Cluster Operator 0.51.0.
+#
+# Todas las claves de este archivo existen en el chart strimzi-kafka-operator
+# 0.51.0, verificadas con:
+#   helm show values strimzi/strimzi-kafka-operator --version 0.51.0
+
+# El operador vigila únicamente el namespace donde vivirá el clúster Kafka de
+# pagos. Separar la oficina del operador (meridiano-sistema) del edificio que
+# administra (meridiano-pagos) es una práctica de gobernanza.
+watchNamespaces:
+  - meridiano-pagos
+watchAnyNamespace: false
+
+# Nivel de log del operador. INFO es suficiente para leer el loop de
+# reconciliación en este lab.
+logLevel: ${env:STRIMZI_LOG_LEVEL:-INFO}
+
+# Recursos del pod del operador. Coinciden con los valores por defecto del
+# chart: mínimos viables y cómodos en una máquina de 16 GB.
+resources:
+  limits:
+    memory: 384Mi
+    cpu: 1000m
+  requests:
+    memory: 384Mi
+    cpu: 200m

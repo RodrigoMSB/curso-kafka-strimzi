@@ -1,0 +1,33 @@
+# Plantilla de values para instalar el Strimzi Cluster Operator.
+# Completa los dos TODO y guarda este archivo como tu values de trabajo,
+# por ejemplo con el nombre: mi-values.yaml
+#
+# -----------------------------------------------------------------------------
+# TODO 2 — Versión del chart a instalar.
+# La versión del chart NO se escribe dentro del archivo de values: se pasa en
+# la línea de comandos con la opción --version al ejecutar 'helm install'.
+# Anótala aquí como recordatorio para no equivocarte al instalar:
+#
+#     Versión del chart strimzi-kafka-operator a instalar: ______________
+#     (en este lab debe ser la 0.51.0)
+# -----------------------------------------------------------------------------
+
+# TODO 1 — Namespace a vigilar.
+# El operador se instala en 'meridiano-sistema', pero debe VIGILAR el namespace
+# donde vivirá el clúster Kafka de pagos. Descomenta la línea de abajo y
+# escribe el namespace correcto:
+watchNamespaces:
+  # - # TODO: escribe aquí el namespace que el operador debe vigilar
+watchAnyNamespace: false
+
+# Nivel de log del operador. Déjalo en INFO para este lab.
+logLevel: ${env:STRIMZI_LOG_LEVEL:-INFO}
+
+# Recursos del pod del operador (valores por defecto del chart, cómodos en 16 GB).
+resources:
+  limits:
+    memory: 384Mi
+    cpu: 1000m
+  requests:
+    memory: 384Mi
+    cpu: 200m

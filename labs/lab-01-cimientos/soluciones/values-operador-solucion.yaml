@@ -1,0 +1,49 @@
+# Solución de la plantilla de values para el Strimzi Cluster Operator 0.51.0.
+# Funcionalmente idéntica a infra/helm/values-operador.yaml.
+#
+# Recordatorio del TODO 2: la versión del chart se pasa en la línea de comandos:
+#   helm install strimzi-operator strimzi/strimzi-kafka-operator \
+#     --version 0.51.0 \
+#     --namespace meridiano-sistema \
+#     --values soluciones/values-operador-solucion.yaml
+
+# TODO 1 resuelto: el operador vigila el namespace de pagos.
+watchNamespaces:
+  - meridiano-pagos
+watchAnyNamespace: false
+
+logLevel: ${env:STRIMZI_LOG_LEVEL:-INFO}
+
+resources:
+  limits:
+    memory: 384Mi
+    cpu: 1000m
+  requests:
+    memory: 384Mi
+    cpu: 200m
+
+# -----------------------------------------------------------------------------
+# Desafío extra (post-sesión) — intervalo de reconciliación periódica.
+#
+# El operador reconcilia de dos formas: por eventos (reactiva) y por un timer
+# periódico. La clave del chart que controla ese timer es:
+#
+#     fullReconciliationIntervalMs   (valor por defecto del chart: 120000 ms = 2 min)
+#
+# En los logs del operador verás reconciliaciones periódicas cada 2 minutos.
+# Para reducir el intervalo (por ejemplo a 30 segundos) y observar el cambio de
+# frecuencia en los logs, aplica un helm upgrade reutilizando los demás values:
+#
+#     helm upgrade strimzi-operator strimzi/strimzi-kafka-operator \
+#       --version 0.51.0 \
+#       --namespace meridiano-sistema \
+#       --reuse-values \
+#       --set fullReconciliationIntervalMs=30000
+#
+# Luego vuelve a leer los logs en modo seguimiento:
+#
+#     kubectl logs deployment/strimzi-cluster-operator -n meridiano-sistema -f
+#
+# Observa que ahora las reconciliaciones periódicas ocurren cada 30 segundos.
+# Para volver al valor por defecto, repite el helm upgrade con 120000.
+# -----------------------------------------------------------------------------
