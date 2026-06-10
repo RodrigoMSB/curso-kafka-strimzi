@@ -20,5 +20,4 @@ kubeconfig*
 *.bak
 *.swp
 tmp/
-bin/
 dist/
