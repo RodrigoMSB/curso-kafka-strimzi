@@ -26,3 +26,4 @@ fi
 echo
 msg_info "Nodos del clúster:"
 kubectl get nodes --context "kind-${NOMBRE_CLUSTER}"
+msg_info "Si el nodo aparece NotReady los primeros segundos es normal: la red interna está arrancando. Espera un momento y vuelve a consultar."

@@ -56,3 +56,20 @@ Salida esperada (puede variar levemente)
 NAME                     STATUS   ROLES           AGE   VERSION
 meridiano-control-plane   Ready    control-plane   60s   v1.34.8
 ```
+
+## Verifica tu trabajo
+
+El script `bin/90-test-lab.sh` comprueba automáticamente que el estado final del
+lab sea correcto. Es de **solo lectura**: no crea, instala ni borra nada; solo
+mira y reporta.
+
+```bash
+bash bin/90-test-lab.sh
+```
+
+Córrelo **al terminar el lab**, o **al inicio de la siguiente sesión** para
+confirmar que tu entorno sigue en pie antes del Lab 02. Cada línea muestra
+`[OK]` o `[ERROR]`; cada error incluye una pista que apunta a la guía o al
+documento de troubleshooting que lo resuelve. Al final verás un resumen del
+tipo `N/N verificaciones correctas`: si todas pasan, el lab está completo; si
+no, revisa los `[ERROR]` de arriba.

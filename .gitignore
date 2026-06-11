@@ -21,3 +21,6 @@ kubeconfig*
 *.swp
 tmp/
 dist/
+
+# Archivos de trabajo del alumno
+mi-values.yaml

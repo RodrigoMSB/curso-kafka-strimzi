@@ -54,6 +54,9 @@ Marca los cinco ítems antes de cerrar:
 - [ ] El pod del operador está en estado `Running` (`kubectl get pods -n meridiano-sistema`).
 - [ ] Los logs muestran que el operador vigila `meridiano-pagos`.
 
+Todo ese checklist está automatizado en `bin/90-test-lab.sh`: ejecútalo para
+verificar de una sola pasada que el lab quedó completo.
+
 ## Desafío extra (opcional, post-sesión)
 
 1. Localiza en los logs el **intervalo de reconciliación periódica**. Pista: el

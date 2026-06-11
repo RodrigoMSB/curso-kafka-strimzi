@@ -77,6 +77,9 @@ NAME                      STATUS   ROLES           AGE   VERSION   ...
 meridiano-control-plane   Ready    control-plane   90s   v1.34.8   ...
 ```
 
+Durante los primeros segundos el nodo puede aparecer `NotReady` mientras termina
+de arrancar la red interna; es normal. Espera un momento y vuelve a consultar.
+
 Confirma que la columna VERSION muestre una versión dentro del rango soportado
 por Strimzi 0.51 (**1.30 a 1.35**). En nuestro caso, `v1.34.8`.
 

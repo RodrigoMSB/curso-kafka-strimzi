@@ -32,19 +32,62 @@ helm repo add strimzi https://strimzi.io/charts/
 helm repo update
 ```
 
-### 3. Preparar tu archivo de values
+### 3. Prepara tu archivo de values (sobre una copia)
 
-Abre la plantilla `plantillas/values-operador-plantilla.yaml` y completa los dos
-TODO que contiene:
+> **La plantilla nunca se edita.** Trabajas siempre sobre una copia. Si editaste
+> la plantilla por error, restáurala con
+> `git checkout -- plantillas/values-operador-plantilla.yaml`.
+
+Copia la plantilla a tu archivo de trabajo personal:
+
+```bash
+cp plantillas/values-operador-plantilla.yaml mi-values.yaml
+```
+
+`mi-values.yaml` es tu archivo de trabajo personal: no se versiona (está
+declarado en el `.gitignore` del repositorio).
+
+Abre `mi-values.yaml` y completa los dos TODO que contiene:
 
 - **TODO 1:** el namespace que el operador debe **vigilar** (pista: no es donde
   se instala el operador, sino donde vivirá el clúster Kafka de pagos).
 - **TODO 2:** la versión del chart a instalar (recordatorio; se usa en el
   comando del paso 4).
 
-Guarda el resultado como tu values de trabajo, por ejemplo `mi-values.yaml`. Si
-te atascas, en `soluciones/values-operador-solucion.yaml` está la versión
-resuelta.
+Compara tu archivo contra estos dos bloques. La línea del namespace debe pasar
+de un estado al otro.
+
+**ANTES** (tal como viene en la plantilla):
+
+```yaml
+watchNamespaces:
+  # - # TODO: escribe aquí el namespace que el operador debe vigilar
+watchAnyNamespace: false
+```
+
+**DESPUÉS** (ya resuelto en tu copia `mi-values.yaml`):
+
+```yaml
+watchNamespaces:
+  - meridiano-pagos
+watchAnyNamespace: false
+```
+
+Antes de instalar, verifica tu copia con un comando:
+
+```bash
+grep -A1 watchNamespaces mi-values.yaml
+```
+
+```text
+Salida esperada (puede variar levemente)
+watchNamespaces:
+  - meridiano-pagos
+```
+
+Si en lugar de eso ves la línea del TODO todavía comentada, vuelve al paso de
+edición: el operador no vigilaría el namespace correcto. Si te atascas, en
+`soluciones/values-operador-solucion.yaml` está la versión resuelta.
 
 ### 4. Instalar el operador
 
@@ -80,6 +123,24 @@ strimzi-cluster-operator-xxxxxxxxxx-xxxxx   1/1     Running   0          60s
 Espera a que el pod `strimzi-cluster-operator-*` quede en estado **Running**.
 La primera vez, la imagen del operador puede tardar en descargarse; mientras
 tanto verás estados como `ContainerCreating`. Es normal.
+
+## Si te equivocaste, no desinstales
+
+Si instalaste con values incorrectos (por ejemplo, el operador quedó vigilando
+el namespace equivocado), **no necesitas desinstalar**. Corrige tu
+`mi-values.yaml` y aplica el cambio con `helm upgrade`: es el mismo comando del
+paso 4, cambiando `install` por `upgrade`:
+
+```bash
+helm upgrade strimzi-operator strimzi/strimzi-kafka-operator \
+  --version 0.51.0 \
+  --namespace meridiano-sistema \
+  --values mi-values.yaml
+```
+
+El pod del operador se reemplaza solo. Durante el reemplazo pueden coexistir
+dos pods por unos segundos: es un *rollout*, el pod viejo se apaga mientras el
+nuevo arranca. Es normal; espera a que quede uno solo en estado `Running`.
 
 ## Cierre conceptual
 
