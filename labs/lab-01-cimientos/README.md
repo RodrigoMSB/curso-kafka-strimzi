@@ -73,3 +73,8 @@ confirmar que tu entorno sigue en pie antes del Lab 02. Cada línea muestra
 documento de troubleshooting que lo resuelve. Al final verás un resumen del
 tipo `N/N verificaciones correctas`: si todas pasan, el lab está completo; si
 no, revisa los `[ERROR]` de arriba.
+
+## Para el instructor
+
+- `bin/91-test-e2e.sh` certifica el lab completo (de cero a fin, con limpieza) en un ambiente nuevo; úsalo en la VM antes del curso.
+- `bin/95-recuperar-lab.sh` reconstruye el estado final del lab para poner al día a un alumno rezagado.

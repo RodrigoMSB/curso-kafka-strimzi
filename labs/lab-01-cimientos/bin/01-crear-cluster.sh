@@ -6,7 +6,11 @@ set -euo pipefail
 DIR_SCRIPT="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR_SCRIPT/lib-comunes.sh"
 
-NOMBRE_CLUSTER="meridiano"
+# Por defecto el clúster se llama 'meridiano'. La variable LAB01_CLUSTER permite
+# usar otro nombre (la usan los scripts 90/91/95 para pruebas aisladas). El flag
+# --name de 'kind create' tiene precedencia sobre el name del kind-config.yaml,
+# así que basta con pasarlo aquí; para el alumno, sin la variable, todo es 'meridiano'.
+NOMBRE_CLUSTER="${LAB01_CLUSTER:-meridiano}"
 ARCHIVO_CONFIG="$DIR_SCRIPT/../infra/kind-config.yaml"
 
 if [ ! -f "$ARCHIVO_CONFIG" ]; then

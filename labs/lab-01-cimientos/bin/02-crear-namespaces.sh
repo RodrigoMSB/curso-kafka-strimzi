@@ -6,7 +6,10 @@ set -euo pipefail
 DIR_SCRIPT="$(cd "$(dirname "$0")" && pwd)"
 . "$DIR_SCRIPT/lib-comunes.sh"
 
-CONTEXTO="kind-meridiano"
+# LAB01_CLUSTER permite apuntar a otro clúster (pruebas 90/91/95). Sin la
+# variable, el contexto es 'kind-meridiano' como para el alumno.
+NOMBRE_CLUSTER="${LAB01_CLUSTER:-meridiano}"
+CONTEXTO="kind-${NOMBRE_CLUSTER}"
 
 for ns in meridiano-sistema meridiano-pagos; do
   msg_info "Asegurando el namespace '${ns}'..."
