@@ -1,0 +1,12 @@
+# Troubleshooting — Lab 04
+
+| # | Problema | Causa típica | Solución |
+|---|----------|--------------|----------|
+| 1 | `kcat: command not found`. | kcat no está instalado en tu máquina. | `brew install kcat` (macOS) o `sudo apt-get install -y kcat` (Debian/Ubuntu/WSL2). |
+| 2 | kcat no conecta: "Connection refused" a 127.0.0.1:32000. | **El error más probable**: tu clúster es anterior al mapeo de puertos del curso y no expone 32000–32007 al host. | Recrea el clúster con la topología nueva: `99` del Lab 01 + `95` del Lab 03. Confirma los mapeos con `docker port meridiano-control-plane`. |
+| 3 | Conecta al bootstrap pero falla al hablar con un broker ("connect to broker ... failed"). | `advertisedHost`/`advertisedPort` mal configurados: el broker anuncia una dirección que tu host no alcanza. | Verifica que cada broker anuncie `127.0.0.1:3200x` (status del CR) y que esos puertos estén mapeados. En el lab deben ser exactamente los del contrato (32001–32003, 32005–32007). |
+| 4 | "SSL handshake failed" / "broker certificate could not be verified". | La CA es la equivocada (o falta `ssl.ca.location`). | Vuelve a extraer la CA con `bin/01-extraer-credenciales.sh` y apunta `ssl.ca.location` a `credenciales/ca.crt`. Es la CA del clúster (`pagos-cluster-ca-cert`), no otra. |
+| 5 | Conecté con la credencial al **puerto equivocado** del otro listener. | SCRAM (usuario/contraseña) va al 32000; mTLS (certificado) va al 32004. Cruzarlos falla. | Con SCRAM al puerto mTLS verás un fallo de handshake/autenticación (el listener mTLS espera un certificado de cliente, no SASL). Con el certificado al puerto SCRAM, el listener espera SASL y rechaza. Usa cada credencial en su puerto. |
+| 6 | No sé si el fallo es de conexión o de autorización. | Son cosas distintas. | "Connection refused"/"could not be established" = **conexión** (no hay listener en ese puerto). `TopicAuthorizationException` = **autorización** (el listener existe, pero falta una ACL). La guía 5 explota esta diferencia. |
+| 7 | El rolling update tras añadir/quitar listeners no termina. | Recursos de Docker o un pod que no pasa readiness. | `kubectl get pods -n meridiano-pagos` y `kubectl describe pod <pod>`. El operador no toca el siguiente broker hasta que el actual esté sano. |
+| 8 | "address already in use" al crear el clúster. | Un puerto del host (32000–32007) ya está ocupado por otro proceso u otro clúster kind. | Libera el puerto o destruye el otro clúster. No corras dos clústeres del curso (ni dos e2e) a la vez: ambos mapean esos puertos. |

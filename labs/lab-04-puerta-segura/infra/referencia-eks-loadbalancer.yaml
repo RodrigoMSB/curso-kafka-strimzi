@@ -1,0 +1,42 @@
+# REFERENCIA — NO EJECUTABLE EN KIND.
+#
+# Así se vería el listener externo en un Kubernetes real (AWS EKS): en vez de
+# nodeport + mapeo de puertos, un listener de tipo 'loadbalancer' que provisiona
+# un AWS Network Load Balancer (NLB). En kind no hay loadbalancers, por eso el
+# laboratorio usa nodeport; esto es solo material de lectura para la guía 4.
+#
+# Las annotations NLB las interpreta el AWS Load Balancer Controller (Strimzi
+# delega en él). Fuente de las annotations:
+#   https://kubernetes-sigs.github.io/aws-load-balancer-controller/latest/guide/service/annotations/
+#
+# Solo se muestra el bloque de listeners que cambia respecto al lab; el resto del
+# CR (version, rack, authorization, etc.) es idéntico.
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: pagos
+spec:
+  kafka:
+    # ... (igual que el CR del lab) ...
+    listeners:
+      - name: external
+        port: 9095
+        type: loadbalancer        # en EKS: provisiona un NLB; en kind no existe
+        tls: true
+        authentication:
+          type: scram-sha-512
+        configuration:
+          bootstrap:
+            annotations:
+              # Activa el AWS Load Balancer Controller como gestor del servicio
+              # (en vez del proveedor in-tree, ya obsoleto).
+              service.beta.kubernetes.io/aws-load-balancer-type: external
+              # Enrutamiento del NLB: 'ip' apunta directo a los pods; 'instance'
+              # enruta vía NodePort de los nodos.
+              service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: ip
+              # Exposición: 'internet-facing' lo hace accesible desde Internet;
+              # 'internal' (por defecto) lo deja solo dentro de la VPC.
+              service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+          # En EKS NO se fija advertisedHost a 127.0.0.1: los brokers anuncian las
+          # direcciones reales que el NLB les asigna (DNS del balanceador). El
+          # operador las descubre y las publica en el status del Kafka.

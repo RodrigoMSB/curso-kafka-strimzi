@@ -1,0 +1,34 @@
+# Plantilla — fragmento de listeners EXTERNOS para el CR Kafka. No es un
+# manifiesto completo: es el bloque que añades a spec.kafka.listeners. Completa
+# los TODO. Los nodePorts son el contrato del curso (32000-32007).
+#
+#     # Listener externo para APLICACIONES (TLS + SCRAM)
+#     - name: extscram
+#       port: 9095
+#       type: # TODO A: tipo de listener para exponer fuera del clúster en kind.
+#             #         Pista: kind no tiene loadbalancers -> nodeport.
+#       tls: # TODO B: ¿cifrado en tránsito? Pista: true.
+#       authentication:
+#         type: # TODO C: mecanismo para las aplicaciones. Pista: scram-sha-512.
+#       configuration:
+#         bootstrap:
+#           nodePort: 32000
+#         brokers:
+#           - { broker: 0, nodePort: 32001, advertisedHost: 127.0.0.1, advertisedPort: 32001 }
+#           - { broker: 1, nodePort: 32002, advertisedHost: 127.0.0.1, advertisedPort: 32002 }
+#           - { broker: 2, nodePort: 32003, advertisedHost: 127.0.0.1, advertisedPort: 32003 }
+#
+#     # Listener externo para SERVICIOS CRÍTICOS (mTLS)
+#     - name: extmtls
+#       port: 9096
+#       type: nodeport
+#       tls: true
+#       authentication:
+#         type: # TODO D: mecanismo para servicios críticos. Pista: tls (mutuo).
+#       configuration:
+#         bootstrap:
+#           nodePort: 32004
+#         brokers:
+#           - { broker: 0, nodePort: 32005, advertisedHost: 127.0.0.1, advertisedPort: 32005 }
+#           - { broker: 1, nodePort: 32006, advertisedHost: 127.0.0.1, advertisedPort: 32006 }
+#           - { broker: 2, nodePort: 32007, advertisedHost: 127.0.0.1, advertisedPort: 32007 }

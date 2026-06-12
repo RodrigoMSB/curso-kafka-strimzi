@@ -21,6 +21,29 @@ name: meridiano
 nodes:
   - role: control-plane
     image: kindest/node:v1.34.8@sha256:02722c2dedddcfc00febf5d27fbeb9b7b2c14294c82109ff4a85d89ac9ba3256
+    # Puente de puertos host -> nodo (contenedor Docker) para el acceso EXTERNO
+    # del Lab 04. Un listener nodeport de Kafka expone NodePorts en el nodo; en
+    # kind, el nodo es un contenedor Docker, así que hay que mapear esos puertos
+    # al host para alcanzarlos desde la terminal del alumno.
+    #
+    # CONTRATO DEL CURSO (puertos fijos que el Lab 04 usa tal cual):
+    #   - Listener externo SCRAM: 32000 (bootstrap), 32001-32003 (un broker c/u).
+    #   - Listener externo mTLS:  32004 (bootstrap), 32005-32007 (un broker c/u).
+    # Son dos listeners porque Strimzi admite UN mecanismo de autenticación por
+    # listener: las aplicaciones entran por SCRAM y los servicios críticos por
+    # mTLS (patrón real de banca).
+    #
+    # En un Kubernetes real (EKS) esto NO existe: el NodePort/LoadBalancer es
+    # alcanzable por red. Este mapeo es solo el puente del laboratorio local.
+    extraPortMappings:
+      - { containerPort: 32000, hostPort: 32000 }
+      - { containerPort: 32001, hostPort: 32001 }
+      - { containerPort: 32002, hostPort: 32002 }
+      - { containerPort: 32003, hostPort: 32003 }
+      - { containerPort: 32004, hostPort: 32004 }
+      - { containerPort: 32005, hostPort: 32005 }
+      - { containerPort: 32006, hostPort: 32006 }
+      - { containerPort: 32007, hostPort: 32007 }
   - role: worker
     image: kindest/node:v1.34.8@sha256:02722c2dedddcfc00febf5d27fbeb9b7b2c14294c82109ff4a85d89ac9ba3256
   - role: worker

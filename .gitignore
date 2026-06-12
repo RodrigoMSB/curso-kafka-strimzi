@@ -26,3 +26,6 @@ dist/
 mi-values.yaml
 mi-kafka.yaml
 mis-*.yaml
+
+# Credenciales extraídas para el acceso externo (Lab 04) — nunca se versionan
+credenciales/
