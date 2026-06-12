@@ -60,6 +60,12 @@ de la plantilla `plantillas/20-listeners-endurecidos.yaml`:
       type: simple
 ```
 
+> **Nota de honestidad (SCRAM sin TLS):** el listener SCRAM interno de este lab
+> va con `tls: false` por simplicidad, así la contraseña viaja en claro dentro
+> del clúster. En producción bancaria **SCRAM viaja siempre sobre TLS**
+> (`SASL_SSL`), exactamente como lo haremos en el Lab 04 con el listener externo.
+> Lo declaramos en vez de esconderlo: es un atajo de laboratorio, no una práctica.
+
 Aplica el CR completo (la solución reúne todo el `Kafka` endurecido):
 
 ```bash

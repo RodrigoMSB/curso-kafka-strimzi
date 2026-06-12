@@ -28,6 +28,12 @@ if [ "$respuesta" = "si" ]; then
   else
     msg_info "El clúster '${NOMBRE_CLUSTER}' no existe. Nada que eliminar."
   fi
+  # Higiene: las credenciales extraídas mueren con el clúster que las emitió.
+  DIR_CRED="$DIR_SCRIPT/../credenciales"
+  if [ -d "$DIR_CRED" ]; then
+    rm -rf "$DIR_CRED"
+    msg_info "Eliminadas las credenciales locales de ./credenciales/ (ya no sirven: los certificados murieron con el clúster)."
+  fi
 else
   msg_info "Operación cancelada. No se eliminó nada."
 fi

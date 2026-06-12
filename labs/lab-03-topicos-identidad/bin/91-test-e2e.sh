@@ -66,14 +66,27 @@ finalizar() {
 
 # Demo de drift: NO gatea el veredicto; observa y registra el comportamiento real.
 demo_drift() {
-  local img antes despues t
+  local img antes despues t ta
   img=$(img_broker); [ -z "$img" ] && img="quay.io/strimzi/kafka:0.51.0-kafka-4.2.0"
   kubectl run cli-admin --restart=Never -n "$NS" --context "$CONTEXTO" --image="$img" --command -- sleep 600 >/dev/null 2>&1 || true
   kubectl wait --for=condition=Ready pod/cli-admin -n "$NS" --context "$CONTEXTO" --timeout=60s >/dev/null 2>&1 || true
-  antes=$(kubectl exec cli-admin -n "$NS" --context "$CONTEXTO" -- bin/kafka-configs.sh \
-    --bootstrap-server pagos-kafka-bootstrap:9092 --describe --entity-type topics \
-    --entity-name "$TOPICO" 2>/dev/null | grep -o 'retention.ms=[0-9]*' | head -1)
-  msg_info "[drift] retención antes = ${antes:-?}; alterando por CLI a 3600000..."
+  # El valor DECLARADO en el KafkaTopic (inmediato, desde el CR).
+  local declarada
+  declarada=$(kubectl get kafkatopic "$TOPICO" -n "$NS" --context "$CONTEXTO" \
+    -o jsonpath='{.spec.config.retention\.ms}' 2>/dev/null)
+  # El valor REAL en Kafka antes de alterar (sondeo corto). Nota: el Topic
+  # Operator unidireccional marca el KafkaTopic Ready en la adopción pero aplica
+  # la config declarada a Kafka en su reconciliación periódica posterior, así que
+  # puede que aún no esté presente aquí; eso es justo lo que la demo evidencia.
+  antes=""; ta=0
+  while [ "$ta" -lt 30 ]; do
+    antes=$(kubectl exec cli-admin -n "$NS" --context "$CONTEXTO" -- bin/kafka-configs.sh \
+      --bootstrap-server pagos-kafka-bootstrap:9092 --describe --entity-type topics \
+      --entity-name "$TOPICO" 2>/dev/null | grep -o 'retention.ms=[0-9]*' | head -1)
+    [ -n "$antes" ] && break
+    sleep 5; ta=$((ta + 5))
+  done
+  msg_info "[drift] retención declarada en el KafkaTopic = retention.ms=${declarada:-?}; en Kafka antes de alterar = ${antes:-aún no aplicada por el operador}; alterando por CLI a 3600000..."
   kubectl exec cli-admin -n "$NS" --context "$CONTEXTO" -- bin/kafka-configs.sh \
     --bootstrap-server pagos-kafka-bootstrap:9092 --alter --entity-type topics \
     --entity-name "$TOPICO" --add-config retention.ms=3600000 >/dev/null 2>&1 || true

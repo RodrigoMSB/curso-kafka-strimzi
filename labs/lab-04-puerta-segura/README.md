@@ -44,6 +44,15 @@ bash bin/90-test-lab.sh
 (El check insignia produce y consume con `kcat` **desde tu host**; necesita kcat
 instalado.)
 
+## Seguridad de las credenciales
+
+El directorio `credenciales/` contiene material sensible local (la CA del
+clúster, la contraseña SCRAM y el certificado/llave de cliente). **Nunca se
+versiona** (está en el `.gitignore`) y **se elimina al destruir el clúster** con
+`bin/99-destruir-lab.sh` (los certificados mueren con el clúster que los emitió).
+Si compartes tu carpeta de trabajo por otro medio (un zip, etc.), elimínalo
+antes.
+
 ## Para el instructor
 
 - `bin/91-test-e2e.sh` certifica el lab completo de cero (Lab 01 → 04), con kcat desde el host, y limpia. No corras dos e2e a la vez: ambos mapean los puertos 32000–32007 del host.

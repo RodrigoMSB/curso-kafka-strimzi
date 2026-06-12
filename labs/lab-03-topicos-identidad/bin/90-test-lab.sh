@@ -102,11 +102,27 @@ verificar "Round-trip autenticado (app-pagos produce SCRAM, motor-fraude consume
 if [ "$cliente_ok" -ne 0 ]; then
   r=1; pista6="Ejecuta bin/01-preparar-cliente.sh."
 else
-  salida=$(kexec bash -c "echo 'no-debe-pasar' | bin/kafka-console-producer.sh \
+  # Verdad de fondo: ¿el mensaje LLEGÓ al tópico? (el kafka-console-producer sale
+  # con exit 0 aunque el broker rechace, así que el exit code no sirve). Se
+  # combina con el patrón de autorización para distinguir un rechazo legítimo de
+  # un fallo por otra causa (red, broker caído).
+  MARCA_NEG="no-debe-pasar-$(date +%s)-$$"
+  salida=$(kexec bash -c "echo '${MARCA_NEG}' | bin/kafka-console-producer.sh \
     --bootstrap-server pagos-kafka-bootstrap:9093 \
     --producer.config /props/motor-fraude.properties \
     --topic ${TOPICO}" 2>&1 || true)
-  if printf '%s' "$salida" | grep -qi "Authorization"; then r=0; pista6=""; else r=1; pista6="motor-fraude pudo producir: las ACLs no son de mínimo privilegio (guía 05)."; fi
+  llego=$(kexec bin/kafka-console-consumer.sh \
+    --bootstrap-server pagos-kafka-bootstrap:9093 \
+    --consumer.config /props/motor-fraude.properties \
+    --topic "${TOPICO}" --group fraude.deteccion --timeout-ms 15000 2>/dev/null \
+    | grep -c "${MARCA_NEG}" || true)
+  if [ "$llego" -gt 0 ]; then
+    r=1; pista6="motor-fraude PRODUJO de verdad (su mensaje llegó al tópico): las ACLs no son de mínimo privilegio (guía 05)."
+  elif printf '%s' "$salida" | grep -qiE "authoriz|not authorized"; then
+    r=0; pista6=""
+  else
+    r=1; pista6="El mensaje no llegó pero tampoco hubo error de autorización (¿red, broker caído?). No es una prueba negativa válida; revisa la salida."
+  fi
 fi
 verificar "Prueba negativa: motor-fraude NO puede producir (rechazo esperado)" "$r" "$pista6"
 
