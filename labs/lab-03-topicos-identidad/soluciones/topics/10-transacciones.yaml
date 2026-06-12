@@ -1,0 +1,17 @@
+# KafkaTopic del tópico de transacciones — ADOPCIÓN.
+# Este tópico ya existía (creado por CLI en el Lab 02). Al declararlo como
+# KafkaTopic con la MISMA configuración real, el Topic Operator lo adopta sin
+# recrearlo. La retención (retention.ms) es el valor que fijamos en la guía 02
+# (reconciliación): 7 días.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: pagos.meridiano.transacciones
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    min.insync.replicas: "2"
+    retention.ms: "604800000"

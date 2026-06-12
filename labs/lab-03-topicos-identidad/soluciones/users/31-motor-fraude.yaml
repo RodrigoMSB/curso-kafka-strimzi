@@ -1,0 +1,30 @@
+# Usuario motor-fraude — el consumidor del motor de detección de fraude.
+# Autenticación mTLS (certificado de cliente). Mínimo privilegio: Read y Describe
+# sobre el tópico de transacciones, y Read sobre su consumer group. Nada más.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: motor-fraude
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: pagos.meridiano.transacciones
+          patternType: literal
+        operations:
+          - Describe
+          - Read
+        host: "*"
+      - resource:
+          type: group
+          name: fraude.deteccion
+          patternType: literal
+        operations:
+          - Read
+        host: "*"

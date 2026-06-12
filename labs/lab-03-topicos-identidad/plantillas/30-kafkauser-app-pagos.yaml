@@ -1,0 +1,26 @@
+# Plantilla — KafkaUser. Trabaja sobre una copia. Completa los TODO.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: app-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    # TODO A: mecanismo de autenticación de este usuario.
+    # Valores: scram-sha-512 (usuario/contraseña) o tls (certificado de cliente).
+    type: # TODO
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: pagos.meridiano.transacciones
+          patternType: literal
+        operations:
+          # TODO B: operaciones de MÍNIMO PRIVILEGIO para un PRODUCTOR.
+          # Pista: un productor necesita escribir y describir el tópico.
+          - # TODO
+        host: "*"
+  quotas:
+    producerByteRate: 102400

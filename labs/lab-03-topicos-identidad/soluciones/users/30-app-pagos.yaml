@@ -1,0 +1,27 @@
+# Usuario app-pagos — el productor de la aplicación de pagos.
+# Autenticación SCRAM-SHA-512. Mínimo privilegio: solo Write y Describe sobre el
+# tópico de transacciones. Nada más. Lleva una cuota de producción baja para
+# observar el throttling.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: app-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: pagos.meridiano.transacciones
+          patternType: literal
+        operations:
+          - Describe
+          - Write
+        host: "*"
+  quotas:
+    # Cuota de producción baja (100 KiB/s por broker) para ver el throttling.
+    producerByteRate: 102400

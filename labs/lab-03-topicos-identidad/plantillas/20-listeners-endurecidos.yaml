@@ -1,0 +1,23 @@
+# Plantilla — fragmento de listeners endurecidos del CR Kafka.
+# No es un manifiesto completo: es el bloque spec.kafka que cambias respecto al
+# Lab 02. Completa los TODO con el tipo de autenticación de cada listener.
+#
+#   listeners:
+#     - name: plain          # se conserva en este lab (se cierra en el Lab 04)
+#       port: 9092
+#       type: internal
+#       tls: false
+#     - name: tls
+#       port: 9093
+#       type: internal
+#       tls: true
+#       authentication:
+#         type: # TODO A: autenticación mutua por certificado. Pista: tls
+#     - name: scram
+#       port: 9094
+#       type: internal
+#       tls: false
+#       authentication:
+#         type: # TODO B: autenticación por usuario/contraseña. Pista: scram-sha-512
+#   authorization:
+#     type: simple           # activa las ACLs gestionadas por los KafkaUser

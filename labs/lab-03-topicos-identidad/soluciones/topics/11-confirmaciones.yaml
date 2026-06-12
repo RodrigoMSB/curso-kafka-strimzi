@@ -1,0 +1,15 @@
+# KafkaTopic del tópico de confirmaciones — NATIVO como código.
+# A diferencia de transacciones, este tópico nace directamente como KafkaTopic:
+# el Topic Operator lo crea en Kafka. Es la forma en que Meridiano declara sus
+# tópicos de negocio de aquí en adelante.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: pagos.meridiano.confirmaciones
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    min.insync.replicas: "2"

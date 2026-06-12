@@ -1,0 +1,78 @@
+# REFERENCIA DEL INSTRUCTOR — KafkaTopics y KafkaUsers del Lab 03.
+# Material de lectura; los scripts aplican soluciones/topics/ y soluciones/users/.
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: pagos.meridiano.transacciones
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    min.insync.replicas: "2"
+    retention.ms: "604800000"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: pagos.meridiano.confirmaciones
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    min.insync.replicas: "2"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: app-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: pagos.meridiano.transacciones
+          patternType: literal
+        operations:
+          - Describe
+          - Write
+        host: "*"
+  quotas:
+    producerByteRate: 102400
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: motor-fraude
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: tls
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: pagos.meridiano.transacciones
+          patternType: literal
+        operations:
+          - Describe
+          - Read
+        host: "*"
+      - resource:
+          type: group
+          name: fraude.deteccion
+          patternType: literal
+        operations:
+          - Read
+        host: "*"

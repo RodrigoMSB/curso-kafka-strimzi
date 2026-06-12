@@ -1,0 +1,18 @@
+# Plantilla — KafkaTopic de ADOPCIÓN. Trabaja sobre una copia.
+# Declara el tópico que YA existe con su MISMA configuración real, para que el
+# Topic Operator lo adopte sin recrearlo. La retención se añade después, en la
+# guía 02 (reconciliación).
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  # TODO A: el nombre EXACTO del tópico que ya existe (creado por CLI en el Lab 02).
+  name: # TODO
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  # TODO B: el número de particiones REAL del tópico (no lo cambies al adoptar).
+  partitions: # TODO
+  # TODO C: el replication factor REAL del tópico.
+  replicas: # TODO
+  config:
+    min.insync.replicas: "2"
