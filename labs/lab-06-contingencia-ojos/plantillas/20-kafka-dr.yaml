@@ -1,0 +1,50 @@
+# Plantilla — clúster de contingencia 'dr'. Trabaja sobre una copia. Completa los TODO.
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: dr-nodes
+  namespace: meridiano-dr
+  labels:
+    strimzi.io/cluster: dr
+spec:
+  # TODO A: réplicas del único pool del DR económico. Pista: 1.
+  replicas: # TODO
+  # TODO B: roles del nodo único. Pista: un solo nodo hace de controller Y broker.
+  roles:
+    - # TODO
+    - # TODO
+  resources:
+    requests: { cpu: 200m, memory: 768Mi }
+    limits: { cpu: "1", memory: 1Gi }
+  jvmOptions:
+    -Xms: 512m
+    -Xmx: 512m
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        # TODO C: tipo de storage del DR de laboratorio. Pista: efímero.
+        type: # TODO
+        kraftMetadata: shared
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: dr
+  namespace: meridiano-dr
+spec:
+  kafka:
+    version: 4.2.0
+    metadataVersion: 4.2-IV1
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1

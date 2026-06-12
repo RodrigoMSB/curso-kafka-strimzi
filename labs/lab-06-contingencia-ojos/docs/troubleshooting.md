@@ -1,0 +1,11 @@
+# Troubleshooting — Lab 06
+
+| # | Problema | Causa típica | Solución |
+|---|----------|--------------|----------|
+| 1 | Pods en `Pending` u `OOMKilled`; algo no arranca. | **El riesgo #1 de este lab**: memoria insuficiente en el Docker VM. | Mira el motivo: `kubectl describe pod <pod>` (Events: "Insufficient memory" o "OOMKilled"). Sube la RAM de Docker Desktop (Settings → Resources) o cierra apps pesadas del host. Comprueba el uso con `docker stats --no-stream`. |
+| 2 | El clúster `dr` no se crea; el operador lo ignora. | El operador no vigila `meridiano-dr` (scope). | Amplía el scope con el `helm upgrade` de la guía 02 (`watchNamespaces` += meridiano-dr) y espera el rollout del operador. |
+| 3 | MM2 queda `NotReady` o no replica. | Falta una ACL del usuario `mm2`, o no llega al origen/destino. | Lee el status y los logs del pod de MM2 (`kubectl logs -n meridiano-pagos -l strimzi.io/cluster=pagos-a-dr`). Un `TopicAuthorization\|GroupAuthorization\|ClusterAuthorization` indica una ACL faltante en el KafkaUser `mm2`. |
+| 4 | Los tópicos aparecen en el DR con un prefijo inesperado (`pagos.pagos.meridiano...`). | Se está usando la política de replicación por defecto (renombra). | Configura `replication.policy.class: org.apache.kafka.connect.mirror.IdentityReplicationPolicy` en AMBOS conectores (source y checkpoint). Debe ser la misma en los dos. |
+| 5 | Prometheus no tiene targets (Status → Targets vacío). | Las métricas no están habilitadas en `pagos`, o el scrape no encuentra el puerto. | Confirma `metricsConfig` en el CR de `pagos` y que el rolling terminó. El pod debe exponer el puerto `tcp-prometheus` (9404): `kubectl get pod <broker> -n meridiano-pagos -o jsonpath='{.spec.containers[0].ports}'`. |
+| 6 | El dashboard de Grafana está vacío (sin datos). | El datasource no apunta a Prometheus, o Prometheus aún no scrapeó. | Verifica el datasource (Grafana → Connections → Data sources → Prometheus, URL `http://prometheus.meridiano-observabilidad.svc:9090`). Espera un par de intervalos de scrape (15s) y genera carga (guía 06). |
+| 7 | El `kubectl port-forward` se corta. | El proceso de port-forward muere si pierde la conexión o el pod se reinicia. | Vuelve a ejecutarlo. Es un túnel local: si el pod de Prometheus/Grafana se reinicia, reábrelo. Mantenlo en una terminal dedicada. |

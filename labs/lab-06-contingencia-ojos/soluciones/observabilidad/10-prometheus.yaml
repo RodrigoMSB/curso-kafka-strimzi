@@ -1,0 +1,112 @@
+# Prometheus STANDALONE (un Deployment), no el Prometheus Operator de los
+# ejemplos oficiales. Decisión por el presupuesto de 16 GB: el operador + sus
+# CRDs pesan de más para este kind. Se mantiene fiel a la EXPOSICIÓN oficial de
+# métricas (el ConfigMap jmxPrometheusExporter de Strimzi 0.51); solo cambia la
+# forma de recolectarlas (scrape directo de los pods con puerto tcp-prometheus).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: meridiano-observabilidad
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: prometheus
+  namespace: meridiano-observabilidad
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: prometheus-meridiano
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "services", "endpoints", "nodes"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: prometheus-meridiano
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: prometheus-meridiano
+subjects:
+  - kind: ServiceAccount
+    name: prometheus
+    namespace: meridiano-observabilidad
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: prometheus-config
+  namespace: meridiano-observabilidad
+data:
+  prometheus.yml: |
+    global:
+      scrape_interval: 15s
+    scrape_configs:
+      # Recoge las métricas de los pods de Strimzi que exponen el puerto
+      # tcp-prometheus (9404), en los namespaces de pagos y del DR.
+      - job_name: strimzi-pods
+        kubernetes_sd_configs:
+          - role: pod
+            namespaces:
+              names: [meridiano-pagos, meridiano-dr]
+        relabel_configs:
+          - source_labels: [__meta_kubernetes_pod_container_port_name]
+            action: keep
+            regex: tcp-prometheus
+          - source_labels: [__meta_kubernetes_namespace]
+            target_label: namespace
+          - source_labels: [__meta_kubernetes_pod_name]
+            target_label: pod
+          - source_labels: [__meta_kubernetes_pod_label_strimzi_io_cluster]
+            target_label: strimzi_cluster
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prometheus
+  namespace: meridiano-observabilidad
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prometheus
+  template:
+    metadata:
+      labels:
+        app: prometheus
+    spec:
+      serviceAccountName: prometheus
+      containers:
+        - name: prometheus
+          image: prom/prometheus:v3.1.0
+          args:
+            - "--config.file=/etc/prometheus/prometheus.yml"
+            - "--storage.tsdb.retention.time=1h"
+          ports:
+            - containerPort: 9090
+          resources:
+            requests: { cpu: 100m, memory: 256Mi }
+            limits: { cpu: "1", memory: 512Mi }
+          volumeMounts:
+            - name: config
+              mountPath: /etc/prometheus
+      volumes:
+        - name: config
+          configMap:
+            name: prometheus-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: prometheus
+  namespace: meridiano-observabilidad
+spec:
+  selector:
+    app: prometheus
+  ports:
+    - port: 9090
+      targetPort: 9090

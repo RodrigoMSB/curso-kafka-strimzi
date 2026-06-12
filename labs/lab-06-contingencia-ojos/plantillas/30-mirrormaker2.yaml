@@ -1,0 +1,57 @@
+# Plantilla — KafkaMirrorMaker2 (pagos -> dr). Trabaja sobre una copia.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaMirrorMaker2
+metadata:
+  name: pagos-a-dr
+  namespace: meridiano-pagos
+spec:
+  version: 4.2.0
+  replicas: 1
+  resources:
+    requests: { cpu: 200m, memory: 512Mi }
+    limits: { cpu: "1", memory: 768Mi }
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m
+  target:
+    # TODO A: alias del clúster DESTINO. Pista: dr
+    alias: # TODO
+    bootstrapServers: dr-kafka-bootstrap.meridiano-dr.svc:9092
+    groupId: mm2-dr-group
+    configStorageTopic: mm2-dr-configs
+    offsetStorageTopic: mm2-dr-offsets
+    statusStorageTopic: mm2-dr-status
+    config:
+      config.storage.replication.factor: -1
+      offset.storage.replication.factor: -1
+      status.storage.replication.factor: -1
+  mirrors:
+    - source:
+        # TODO B: alias del clúster ORIGEN. Pista: pagos
+        alias: # TODO
+        bootstrapServers: pagos-kafka-bootstrap:9094
+        authentication:
+          type: scram-sha-512
+          username: mm2
+          passwordSecret:
+            secretName: mm2
+            password: password
+      sourceConnector:
+        tasksMax: 1
+        config:
+          replication.factor: -1
+          offset-syncs.topic.replication.factor: -1
+          sync.topic.acls.enabled: "false"
+          refresh.topics.interval.seconds: 30
+          # Mantener los nombres de los tópicos en el DR (activo/pasivo limpio).
+          replication.policy.class: org.apache.kafka.connect.mirror.IdentityReplicationPolicy
+      checkpointConnector:
+        tasksMax: 1
+        config:
+          checkpoints.topic.replication.factor: -1
+          sync.group.offsets.enabled: "false"
+          replication.policy.class: org.apache.kafka.connect.mirror.IdentityReplicationPolicy
+      # TODO C: patrón de los tópicos de negocio a replicar.
+      # Pista: pagos.meridiano.* y core.*  ->  "pagos\\.meridiano\\..*|core\\..*"
+      topicsPattern: # TODO
+      groupsPattern: ".*"

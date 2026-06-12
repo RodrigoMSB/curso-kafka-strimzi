@@ -1,0 +1,63 @@
+# El espejo: MirrorMaker 2 replica de 'pagos' (origen) a 'dr' (destino).
+# Topología activo/pasivo. Con IdentityReplicationPolicy, los tópicos conservan
+# su nombre en el DR (pagos.meridiano.transacciones -> pagos.meridiano.transacciones).
+# Trade-off: identity exige disciplina de NO replicar de vuelta (sería un bucle);
+# en activo/pasivo unidireccional es seguro y da nombres limpios en el DR.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaMirrorMaker2
+metadata:
+  name: pagos-a-dr
+  namespace: meridiano-pagos
+spec:
+  version: 4.2.0
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 768Mi
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m
+  # El destino: el clúster de contingencia (sin autenticar, listener simple).
+  target:
+    alias: dr
+    bootstrapServers: dr-kafka-bootstrap.meridiano-dr.svc:9092
+    groupId: mm2-dr-group
+    configStorageTopic: mm2-dr-configs
+    offsetStorageTopic: mm2-dr-offsets
+    statusStorageTopic: mm2-dr-status
+    config:
+      config.storage.replication.factor: -1
+      offset.storage.replication.factor: -1
+      status.storage.replication.factor: -1
+  mirrors:
+    # El origen: el clúster de pagos (autenticado SCRAM como el usuario mm2).
+    - source:
+        alias: pagos
+        bootstrapServers: pagos-kafka-bootstrap:9094
+        authentication:
+          type: scram-sha-512
+          username: mm2
+          passwordSecret:
+            secretName: mm2
+            password: password
+      sourceConnector:
+        tasksMax: 1
+        config:
+          replication.factor: -1
+          offset-syncs.topic.replication.factor: -1
+          sync.topic.acls.enabled: "false"
+          refresh.topics.interval.seconds: 30
+          replication.policy.class: org.apache.kafka.connect.mirror.IdentityReplicationPolicy
+      checkpointConnector:
+        tasksMax: 1
+        config:
+          checkpoints.topic.replication.factor: -1
+          sync.group.offsets.enabled: "false"
+          replication.policy.class: org.apache.kafka.connect.mirror.IdentityReplicationPolicy
+      # Replica solo los tópicos de negocio: pagos.meridiano.* y core.*
+      topicsPattern: "pagos\\.meridiano\\..*|core\\..*"
+      groupsPattern: ".*"

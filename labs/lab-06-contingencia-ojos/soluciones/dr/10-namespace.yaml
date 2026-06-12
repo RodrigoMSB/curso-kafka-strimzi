@@ -1,0 +1,6 @@
+# El clúster de contingencia vive en su propio namespace. El operador debe
+# ampliar su scope para vigilarlo (ver guía 02: helm upgrade del values).
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: meridiano-dr

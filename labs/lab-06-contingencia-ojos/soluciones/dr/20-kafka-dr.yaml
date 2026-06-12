@@ -1,0 +1,58 @@
+# Clúster de contingencia 'dr' — DISEÑO ECONÓMICO DE LABORATORIO.
+# UN solo nodo dual-role (controller+broker), storage efímero, RF=1. Es el modelo
+# a escala: el DR real vive en OTRA región, con varios nodos y discos reales.
+# Aquí cabe en 16 GB junto a todo lo demás.
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: dr-nodes
+  namespace: meridiano-dr
+  labels:
+    strimzi.io/cluster: dr
+spec:
+  replicas: 1
+  roles:
+    - controller
+    - broker
+  resources:
+    requests:
+      cpu: 200m
+      memory: 768Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  jvmOptions:
+    -Xms: 512m
+    -Xmx: 512m
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: ephemeral
+        kraftMetadata: shared
+---
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: dr
+  namespace: meridiano-dr
+spec:
+  kafka:
+    version: 4.2.0
+    metadataVersion: 4.2-IV1
+    # Un solo listener interno simple (sin autenticación). El DR del lab no está
+    # endurecido por economía; en producción lo estaría como el de pagos.
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+    config:
+      # RF=1: solo hay un broker en este DR de laboratorio.
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1
+  # Sin entityOperator: el DR es pasivo (MM2 crea sus tópicos por la admin API).

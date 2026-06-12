@@ -1,0 +1,30 @@
+# Identidad de MirrorMaker 2 en el clúster ORIGEN (pagos). MM2 lee los tópicos a
+# replicar y opera su tópico interno de offset-syncs en el origen.
+# Nota: las ACLs de MM2 son amplias por naturaleza (debe leer todo lo que calce
+# con el patrón y descubrir tópicos/grupos). En producción se acotan al patrón
+# replicado; aquí priorizamos que MM2 opere sin fricción.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: mm2
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      # Leer todos los tópicos del origen (para descubrir y replicar).
+      - resource: { type: topic, name: "*", patternType: literal }
+        operations: [Read, Describe, DescribeConfigs]
+      # Tópico interno de offset-syncs (vive en el origen): crear/leer/escribir.
+      - resource: { type: topic, name: "mm2-offset-syncs", patternType: prefix }
+        operations: [Create, Read, Write, Describe, DescribeConfigs]
+      # Leer los consumer groups del origen (checkpoint connector).
+      - resource: { type: group, name: "*", patternType: literal }
+        operations: [Read, Describe]
+      # Operación a nivel de cluster.
+      - resource: { type: cluster }
+        operations: [Describe, DescribeConfigs, IdempotentWrite]
