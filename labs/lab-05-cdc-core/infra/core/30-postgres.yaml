@@ -1,0 +1,57 @@
+# PostgreSQL 16 del core. Arranca con wal_level=logical (requisito de CDC: sin
+# eso, PostgreSQL no escribe en el WAL lo suficiente para la decodificación
+# lógica que usa Debezium). El init.sh se ejecuta al inicializar el volumen.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: core-postgres
+  namespace: meridiano-core
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: core-postgres
+  template:
+    metadata:
+      labels:
+        app: core-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16
+          # wal_level=logical habilita la decodificación lógica para CDC.
+          args: ["-c", "wal_level=logical"]
+          envFrom:
+            - secretRef:
+                name: core-postgres
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          readinessProbe:
+            exec:
+              command: ["bash", "-c", "pg_isready -U postgres -d meridiano"]
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: init
+          configMap:
+            name: core-init
+            defaultMode: 0755
+        - name: data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: core-postgres
+  namespace: meridiano-core
+spec:
+  selector:
+    app: core-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432

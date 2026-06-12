@@ -1,0 +1,37 @@
+# Script de inicialización del core: crea la tabla 'clientes' con 3 filas semilla
+# y prepara PostgreSQL para CDC con Debezium (pgoutput):
+#   - REPLICA IDENTITY FULL: para capturar 'before' completo en UPDATE/DELETE.
+#   - usuario 'debezium' con REPLICATION LOGIN (no superuser).
+#   - publicación FOR ALL TABLES (creada por el superuser del init, así el
+#     usuario debezium no necesita permisos para crearla).
+# Corre una sola vez, al inicializar el volumen de datos.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: core-init
+  namespace: meridiano-core
+data:
+  init.sh: |
+    #!/bin/bash
+    set -e
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<EOSQL
+      CREATE TABLE clientes (
+        id     SERIAL PRIMARY KEY,
+        nombre TEXT NOT NULL,
+        email  TEXT,
+        saldo  NUMERIC(14,2) DEFAULT 0
+      );
+      ALTER TABLE clientes REPLICA IDENTITY FULL;
+
+      INSERT INTO clientes (nombre, email, saldo) VALUES
+        ('Ana Perez',  'ana@meridiano.cl',   1500.00),
+        ('Beto Soto',  'beto@meridiano.cl',  3200.50),
+        ('Carla Diaz', 'carla@meridiano.cl',  780.25);
+
+      CREATE ROLE debezium WITH REPLICATION LOGIN PASSWORD '${DEBEZIUM_PASSWORD}';
+      GRANT USAGE ON SCHEMA public TO debezium;
+      GRANT SELECT ON ALL TABLES IN SCHEMA public TO debezium;
+      ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO debezium;
+
+      CREATE PUBLICATION dbz_publication FOR ALL TABLES;
+    EOSQL

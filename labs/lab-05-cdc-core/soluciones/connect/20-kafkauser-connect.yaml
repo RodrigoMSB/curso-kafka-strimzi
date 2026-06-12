@@ -1,0 +1,55 @@
+# Identidad de Kafka Connect: como cualquier cliente de Meridiano, Connect tiene
+# su KafkaUser con permisos de mínimo privilegio.
+# ACLs que Kafka Connect necesita:
+#   - sus tópicos internos (configs/offsets/status), por prefijo connect-cdc.
+#   - su consumer group, por prefijo connect-cdc.
+#   - escribir en los tópicos de CDC destino, por prefijo core.
+#   - IdempotentWrite a nivel de cluster (el productor de Connect es idempotente).
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: connect-cdc
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      # Tópicos internos de Connect (configs, offsets, status).
+      - resource:
+          type: topic
+          name: connect-cdc
+          patternType: prefix
+        operations:
+          - Create
+          - Read
+          - Write
+          - Describe
+          - DescribeConfigs
+        host: "*"
+      # Consumer group del worker de Connect.
+      - resource:
+          type: group
+          name: connect-cdc
+          patternType: prefix
+        operations:
+          - Read
+        host: "*"
+      # Tópicos de CDC destino (core.public.clientes, etc.).
+      - resource:
+          type: topic
+          name: core.
+          patternType: prefix
+        operations:
+          - Create
+          - Write
+          - Describe
+        host: "*"
+      # El productor idempotente necesita este permiso a nivel de cluster.
+      - resource:
+          type: cluster
+        operations:
+          - IdempotentWrite
+        host: "*"

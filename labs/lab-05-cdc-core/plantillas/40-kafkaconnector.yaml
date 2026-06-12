@@ -1,0 +1,33 @@
+# Plantilla — KafkaConnector (Debezium PostgreSQL). Trabaja sobre una copia.
+# Completa los TODO.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnector
+metadata:
+  name: core-clientes
+  labels:
+    strimzi.io/cluster: connect-cdc
+spec:
+  class: io.debezium.connector.postgresql.PostgresConnector
+  tasksMax: 1
+  config:
+    database.hostname: core-postgres.meridiano-core.svc
+    database.port: "5432"
+    database.user: debezium
+    # TODO A: la contraseña NO va en texto plano. Referénciala con el config
+    # provider 'directory' al archivo montado. Pista:
+    #   ${directory:/mnt/core-db:password}
+    database.password: # TODO
+    database.dbname: meridiano
+    # TODO B: prefijo de los tópicos de CDC (los tópicos serán <prefijo>.public.clientes).
+    # Pista: core
+    topic.prefix: # TODO
+    plugin.name: pgoutput
+    publication.name: dbz_publication
+    publication.autocreate.mode: disabled
+    slot.name: debezium_clientes
+    # TODO C: la tabla del core a capturar. Pista: public.clientes
+    table.include.list: # TODO
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: "false"
+    value.converter.schemas.enable: "false"

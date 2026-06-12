@@ -1,0 +1,33 @@
+# El "encargo": un KafkaConnector que le dice a Connect que capture la tabla
+# public.clientes del core con Debezium PostgreSQL. La contraseña NO va en texto
+# plano: se lee del archivo montado vía el config provider.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnector
+metadata:
+  name: core-clientes
+  labels:
+    # Vincula este conector con el KafkaConnect 'connect-cdc'.
+    strimzi.io/cluster: connect-cdc
+spec:
+  class: io.debezium.connector.postgresql.PostgresConnector
+  tasksMax: 1
+  config:
+    # Conexión al core (otro namespace, vía DNS de Kubernetes).
+    database.hostname: core-postgres.meridiano-core.svc
+    database.port: "5432"
+    database.user: debezium
+    database.password: ${directory:/mnt/core-db:password}
+    database.dbname: meridiano
+    # Prefijo de los tópicos de CDC: core.<schema>.<tabla>.
+    topic.prefix: core
+    # Decodificación lógica nativa de PostgreSQL.
+    plugin.name: pgoutput
+    publication.name: dbz_publication
+    publication.autocreate.mode: disabled
+    slot.name: debezium_clientes
+    table.include.list: public.clientes
+    # Eventos como JSON plano (sin schema registry), para leerlos a ojo.
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: "false"
+    value.converter.schemas.enable: "false"

@@ -1,0 +1,12 @@
+# Secret con la contraseña del usuario 'debezium' del core, en el namespace de la
+# plataforma (meridiano-pagos) para que el pod de Kafka Connect pueda montarlo
+# (un pod solo monta Secrets de su propio namespace). Debe coincidir con
+# DEBEZIUM_PASSWORD del Secret core-postgres.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: connect-db-cred
+  namespace: meridiano-pagos
+type: Opaque
+stringData:
+  password: cdcpass

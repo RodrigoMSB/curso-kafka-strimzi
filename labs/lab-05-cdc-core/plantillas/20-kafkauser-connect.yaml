@@ -1,0 +1,40 @@
+# Plantilla — KafkaUser de Kafka Connect. Trabaja sobre una copia.
+# Completa los prefijos de las ACLs (TODO).
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: connect-cdc
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          # TODO A: prefijo de los tópicos internos de Connect (configs/offsets/status).
+          # Pista: connect-cdc
+          name: # TODO
+          patternType: prefix
+        operations: [Create, Read, Write, Describe, DescribeConfigs]
+        host: "*"
+      - resource:
+          type: group
+          # TODO B: prefijo del consumer group del worker. Pista: connect-cdc
+          name: # TODO
+          patternType: prefix
+        operations: [Read]
+        host: "*"
+      - resource:
+          type: topic
+          # TODO C: prefijo de los tópicos de CDC destino. Pista: core.
+          name: # TODO
+          patternType: prefix
+        operations: [Create, Write, Describe]
+        host: "*"
+      - resource:
+          type: cluster
+        operations: [IdempotentWrite]
+        host: "*"

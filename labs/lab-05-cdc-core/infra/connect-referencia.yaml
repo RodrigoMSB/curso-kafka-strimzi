@@ -1,0 +1,182 @@
+# REFERENCIA DEL INSTRUCTOR — recursos de Connect del Lab 05.
+# Material de lectura; los scripts aplican soluciones/connect/.
+---
+# Identidad de Kafka Connect: como cualquier cliente de Meridiano, Connect tiene
+# su KafkaUser con permisos de mínimo privilegio.
+# ACLs que Kafka Connect necesita:
+#   - sus tópicos internos (configs/offsets/status), por prefijo connect-cdc.
+#   - su consumer group, por prefijo connect-cdc.
+#   - escribir en los tópicos de CDC destino, por prefijo core.
+#   - IdempotentWrite a nivel de cluster (el productor de Connect es idempotente).
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: connect-cdc
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      # Tópicos internos de Connect (configs, offsets, status).
+      - resource:
+          type: topic
+          name: connect-cdc
+          patternType: prefix
+        operations:
+          - Create
+          - Read
+          - Write
+          - Describe
+          - DescribeConfigs
+        host: "*"
+      # Consumer group del worker de Connect.
+      - resource:
+          type: group
+          name: connect-cdc
+          patternType: prefix
+        operations:
+          - Read
+        host: "*"
+      # Tópicos de CDC destino (core.public.clientes, etc.).
+      - resource:
+          type: topic
+          name: core.
+          patternType: prefix
+        operations:
+          - Create
+          - Write
+          - Describe
+        host: "*"
+      # El productor idempotente necesita este permiso a nivel de cluster.
+      - resource:
+          type: cluster
+        operations:
+          - IdempotentWrite
+        host: "*"
+---
+# Identidad para CONSUMIR los tópicos de CDC (p. ej. el motor de fraude o una
+# app de analítica que lee el core en tiempo real). Mínimo privilegio: solo Read
+# sobre los tópicos core.* y su consumer group.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: cdc-reader
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: core.
+          patternType: prefix
+        operations: [Read, Describe]
+        host: "*"
+      - resource:
+          type: group
+          name: cdc-reader
+          patternType: prefix
+        operations: [Read]
+        host: "*"
+---
+# El "equipo de trabajo" de Connect. Strimzi CONSTRUYE su imagen dentro del
+# clúster (spec.build): base de Kafka Connect + plugin de Debezium PostgreSQL,
+# y la empuja al registry local.
+#
+# additionalBuildOptions: [--insecure] permite empujar a un registry HTTP sin
+# TLS. Es legítimo SOLO porque el registry es de juguete; en EKS con ECR (HTTPS)
+# esta opción desaparece.
+#
+# La anotación use-connector-resources hace que los KafkaConnector (CRs) sean la
+# fuente de verdad de los conectores.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnect
+metadata:
+  name: connect-cdc
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  version: 4.2.0
+  replicas: 1
+  # Listener interno autenticado SCRAM (9094) del clúster de pagos.
+  bootstrapServers: pagos-kafka-bootstrap:9094
+  authentication:
+    type: scram-sha-512
+    username: connect-cdc
+    passwordSecret:
+      secretName: connect-cdc
+      password: password
+  groupId: connect-cdc
+  configStorageTopic: connect-cdc-configs
+  offsetStorageTopic: connect-cdc-offsets
+  statusStorageTopic: connect-cdc-status
+  config:
+    config.storage.replication.factor: -1
+    offset.storage.replication.factor: -1
+    status.storage.replication.factor: -1
+    # Proveedor de configuración para leer la contraseña de la BD desde un
+    # archivo montado (sin contraseñas en texto plano en el KafkaConnector).
+    config.providers: directory
+    config.providers.directory.class: org.apache.kafka.common.config.provider.DirectoryConfigProvider
+  build:
+    output:
+      type: docker
+      image: kind-registry:5000/meridiano/connect-cdc:latest
+      additionalBuildOptions:
+        - --insecure
+    plugins:
+      - name: debezium-postgres
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.5.2.Final/debezium-connector-postgres-3.5.2.Final-plugin.tar.gz
+            sha512sum: 7ee20a5106d11068677dd81d06fad7ee1c2fa09ba31658ecfed5dc9611e8fd73417251b9a5661e5425d8cfac1f868afb83dec56027639f54394e8f4d1f7f4c4e
+  template:
+    pod:
+      volumes:
+        - name: core-db-cred
+          secret:
+            secretName: connect-db-cred
+    connectContainer:
+      volumeMounts:
+        - name: core-db-cred
+          mountPath: /mnt/core-db
+---
+# El "encargo": un KafkaConnector que le dice a Connect que capture la tabla
+# public.clientes del core con Debezium PostgreSQL. La contraseña NO va en texto
+# plano: se lee del archivo montado vía el config provider.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnector
+metadata:
+  name: core-clientes
+  labels:
+    # Vincula este conector con el KafkaConnect 'connect-cdc'.
+    strimzi.io/cluster: connect-cdc
+spec:
+  class: io.debezium.connector.postgresql.PostgresConnector
+  tasksMax: 1
+  config:
+    # Conexión al core (otro namespace, vía DNS de Kubernetes).
+    database.hostname: core-postgres.meridiano-core.svc
+    database.port: "5432"
+    database.user: debezium
+    database.password: ${directory:/mnt/core-db:password}
+    database.dbname: meridiano
+    # Prefijo de los tópicos de CDC: core.<schema>.<tabla>.
+    topic.prefix: core
+    # Decodificación lógica nativa de PostgreSQL.
+    plugin.name: pgoutput
+    publication.name: dbz_publication
+    publication.autocreate.mode: disabled
+    slot.name: debezium_clientes
+    table.include.list: public.clientes
+    # Eventos como JSON plano (sin schema registry), para leerlos a ojo.
+    key.converter: org.apache.kafka.connect.json.JsonConverter
+    value.converter: org.apache.kafka.connect.json.JsonConverter
+    key.converter.schemas.enable: "false"
+    value.converter.schemas.enable: "false"

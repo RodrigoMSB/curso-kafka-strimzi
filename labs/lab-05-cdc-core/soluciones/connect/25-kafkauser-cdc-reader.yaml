@@ -1,0 +1,27 @@
+# Identidad para CONSUMIR los tópicos de CDC (p. ej. el motor de fraude o una
+# app de analítica que lee el core en tiempo real). Mínimo privilegio: solo Read
+# sobre los tópicos core.* y su consumer group.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: cdc-reader
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: core.
+          patternType: prefix
+        operations: [Read, Describe]
+        host: "*"
+      - resource:
+          type: group
+          name: cdc-reader
+          patternType: prefix
+        operations: [Read]
+        host: "*"

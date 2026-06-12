@@ -1,0 +1,61 @@
+# El "equipo de trabajo" de Connect. Strimzi CONSTRUYE su imagen dentro del
+# clúster (spec.build): base de Kafka Connect + plugin de Debezium PostgreSQL,
+# y la empuja al registry local.
+#
+# additionalBuildOptions: [--insecure] permite empujar a un registry HTTP sin
+# TLS. Es legítimo SOLO porque el registry es de juguete; en EKS con ECR (HTTPS)
+# esta opción desaparece.
+#
+# La anotación use-connector-resources hace que los KafkaConnector (CRs) sean la
+# fuente de verdad de los conectores.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaConnect
+metadata:
+  name: connect-cdc
+  annotations:
+    strimzi.io/use-connector-resources: "true"
+spec:
+  version: 4.2.0
+  replicas: 1
+  # Listener interno autenticado SCRAM (9094) del clúster de pagos.
+  bootstrapServers: pagos-kafka-bootstrap:9094
+  authentication:
+    type: scram-sha-512
+    username: connect-cdc
+    passwordSecret:
+      secretName: connect-cdc
+      password: password
+  groupId: connect-cdc
+  configStorageTopic: connect-cdc-configs
+  offsetStorageTopic: connect-cdc-offsets
+  statusStorageTopic: connect-cdc-status
+  config:
+    config.storage.replication.factor: -1
+    offset.storage.replication.factor: -1
+    status.storage.replication.factor: -1
+    # Proveedor de configuración para leer la contraseña de la BD desde un
+    # archivo montado (sin contraseñas en texto plano en el KafkaConnector).
+    config.providers: directory
+    config.providers.directory.class: org.apache.kafka.common.config.provider.DirectoryConfigProvider
+  build:
+    output:
+      type: docker
+      image: kind-registry:5000/meridiano/connect-cdc:latest
+      additionalBuildOptions:
+        - --insecure
+    plugins:
+      - name: debezium-postgres
+        artifacts:
+          - type: tgz
+            url: https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.5.2.Final/debezium-connector-postgres-3.5.2.Final-plugin.tar.gz
+            sha512sum: 7ee20a5106d11068677dd81d06fad7ee1c2fa09ba31658ecfed5dc9611e8fd73417251b9a5661e5425d8cfac1f868afb83dec56027639f54394e8f4d1f7f4c4e
+  template:
+    pod:
+      volumes:
+        - name: core-db-cred
+          secret:
+            secretName: connect-db-cred
+    connectContainer:
+      volumeMounts:
+        - name: core-db-cred
+          mountPath: /mnt/core-db
