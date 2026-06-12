@@ -1,0 +1,31 @@
+# Pool de controllers del clúster de pagos — PARTE 1 (storage efímero).
+# 1 réplica: topología económica de laboratorio. En producción el quorum de
+# controllers es de 3 y no se negocia; aquí 1 porque una VM de 16 GB no es un
+# datacenter (ver la guía 01).
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: controllers
+  labels:
+    # Vincula este pool con el clúster Kafka 'pagos' (obligatorio).
+    strimzi.io/cluster: pagos
+spec:
+  replicas: 1
+  roles:
+    - controller
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: ephemeral
+        kraftMetadata: shared

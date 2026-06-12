@@ -1,0 +1,36 @@
+# Pool de controllers — PARTE 2 (storage persistente).
+# Mismo pool que la parte 1, pero con almacenamiento que sobrevive al reinicio
+# de los pods. El tipo de storage NO es modificable en caliente: este manifiesto
+# se aplica tras recrear los pools (ver la guía 04).
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: controllers
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  replicas: 1
+  roles:
+    - controller
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 512Mi
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 1Gi
+        # deleteClaim: false (valor por defecto) — el PVC SOBREVIVE al borrado
+        # del clúster. Es deliberado: en un banco no quieres que borrar un CR se
+        # lleve por delante los datos. La contracara (la "historia de terror"):
+        # los PVC huérfanos se acumulan y hay que limpiarlos a mano.
+        deleteClaim: false
+        kraftMetadata: shared

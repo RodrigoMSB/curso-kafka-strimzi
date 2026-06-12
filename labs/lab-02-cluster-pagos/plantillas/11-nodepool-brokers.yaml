@@ -1,0 +1,32 @@
+# Plantilla — pool de brokers. Trabaja sobre una COPIA. Completa los TODO.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: brokers
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  # TODO A: número de réplicas del pool de brokers.
+  # Pista: necesitamos replication factor 3 y una réplica por zona (guía 01).
+  replicas: # TODO
+  # TODO B: rol de este pool. Valores admitidos: controller, broker.
+  roles:
+    - # TODO
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  jvmOptions:
+    -Xms: 512m
+    -Xmx: 512m
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        # TODO C: tipo de volumen para la PARTE 1. Pista: efímero, a propósito
+        # (la guía 04 explica por qué empezamos así). Valor: ephemeral.
+        type: # TODO
+        kraftMetadata: shared

@@ -10,8 +10,7 @@ Docker y no deja nada instalado en el sistema operativo del alumno.
 
 ## El archivo `infra/kind-config.yaml`
 
-Nuestro clúster se define en un archivo corto. La brevedad es parte del
-mensaje: para construir cimientos no hace falta complejidad.
+Nuestro clúster se define en un archivo corto:
 
 ```yaml
 kind: Cluster
@@ -20,6 +19,12 @@ name: meridiano
 nodes:
   - role: control-plane
     image: kindest/node:v1.34.8@sha256:02722c2dedddcfc00febf5d27fbeb9b7b2c14294c82109ff4a85d89ac9ba3256
+  - role: worker
+    image: kindest/node:v1.34.8@sha256:02722c2dedddcfc00febf5d27fbeb9b7b2c14294c82109ff4a85d89ac9ba3256
+  - role: worker
+    image: kindest/node:v1.34.8@sha256:02722c2dedddcfc00febf5d27fbeb9b7b2c14294c82109ff4a85d89ac9ba3256
+  - role: worker
+    image: kindest/node:v1.34.8@sha256:02722c2dedddcfc00febf5d27fbeb9b7b2c14294c82109ff4a85d89ac9ba3256
 ```
 
 Campo por campo:
@@ -27,9 +32,10 @@ Campo por campo:
 - **`kind: Cluster`** — el tipo de objeto que describe este archivo (un clúster kind).
 - **`apiVersion: kind.x-k8s.io/v1alpha4`** — la versión del formato de configuración de kind.
 - **`name: meridiano`** — el nombre del clúster. kind lo prefija como contexto `kind-meridiano`.
-- **`nodes`** — la lista de nodos. Aquí, uno solo.
-  - **`role: control-plane`** — ese único nodo es el plano de control. Para este lab no necesitamos workers.
-  - **`image`** — la imagen del nodo, **fijada con su digest** a Kubernetes v1.34.8.
+- **`nodes`** — la lista de nodos: un **control-plane** y tres **workers**.
+  - **`role: control-plane`** — el plano de control del clúster.
+  - **`role: worker`** (×3) — los tres nodos de trabajo. Aunque el Lab 01 no los usa todavía, existen desde ahora porque el curso construye un único clúster que evoluciona: desde el Lab 02 los brokers de Kafka se distribuyen entre estos tres workers, que además simularán tres zonas de disponibilidad.
+  - **`image`** — la imagen del nodo, **fijada con su digest** a Kubernetes v1.34.8 (la misma en los cuatro nodos).
 
 ## Por qué se fija la versión del nodo
 
@@ -75,7 +81,15 @@ kubectl get nodes -o wide
 Salida esperada (puede variar levemente)
 NAME                      STATUS   ROLES           AGE   VERSION   ...
 meridiano-control-plane   Ready    control-plane   90s   v1.34.8   ...
+meridiano-worker          Ready    <none>          70s   v1.34.8   ...
+meridiano-worker2         Ready    <none>          70s   v1.34.8   ...
+meridiano-worker3         Ready    <none>          70s   v1.34.8   ...
 ```
+
+El clúster tiene **cuatro nodos**: un control-plane y tres workers. Los tres
+workers existen desde el Lab 01 a propósito: el curso los usará a partir del
+Lab 02 para distribuir los brokers de Kafka y simular tres zonas. El clúster
+nace una sola vez con su topología definitiva.
 
 Durante los primeros segundos el nodo puede aparecer `NotReady` mientras termina
 de arrancar la red interna; es normal. Espera un momento y vuelve a consultar.

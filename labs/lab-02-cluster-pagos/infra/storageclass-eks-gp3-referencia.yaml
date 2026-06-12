@@ -1,0 +1,29 @@
+# REFERENCIA NO EJECUTABLE — StorageClass de producción en AWS EKS.
+#
+# En el laboratorio usamos la StorageClass por defecto de kind ('standard',
+# provisionada por local-path), que basta para discos chicos en una VM. Este
+# archivo NO se aplica: documenta cómo se vería el storage de los brokers en un
+# banco real sobre EKS, con discos gp3. Todo está comentado a propósito.
+#
+# apiVersion: storage.k8s.io/v1
+# kind: StorageClass
+# metadata:
+#   name: kafka-gp3
+# provisioner: ebs.csi.aws.com
+# parameters:
+#   type: gp3
+#   iops: "3000"
+#   throughput: "125"
+# reclaimPolicy: Retain          # los discos no se borran al borrar el PVC
+# allowVolumeExpansion: true     # permite agrandar los volúmenes en caliente
+# volumeBindingMode: WaitForFirstConsumer  # el disco se crea en la zona del pod
+#
+# Para usarla, los KafkaNodePool referenciarían esta clase en su storage:
+#   storage:
+#     type: jbod
+#     volumes:
+#       - id: 0
+#         type: persistent-claim
+#         size: 500Gi
+#         class: kafka-gp3
+#         kraftMetadata: shared

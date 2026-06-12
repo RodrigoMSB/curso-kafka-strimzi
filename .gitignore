@@ -22,5 +22,7 @@ kubeconfig*
 tmp/
 dist/
 
-# Archivos de trabajo del alumno
+# Archivos de trabajo del alumno (copias de plantillas que el alumno completa)
 mi-values.yaml
+mi-kafka.yaml
+mis-*.yaml

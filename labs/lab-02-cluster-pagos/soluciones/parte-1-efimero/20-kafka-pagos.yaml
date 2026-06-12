@@ -1,0 +1,33 @@
+# Clúster Kafka de pagos — PARTE 1 (sin rack todavía).
+# Versión de Kafka 4.2.0 (soportada por Strimzi 0.51) en modo KRaft. En 0.51 no
+# hacen falta anotaciones para node pools ni KRaft: es el modo por defecto.
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: pagos
+spec:
+  kafka:
+    version: 4.2.0
+    metadataVersion: 4.2-IV1
+    listeners:
+      # Listener interno en texto plano para los clientes dentro del clúster.
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      # Listener interno con TLS (se usará más adelante en el curso).
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+    config:
+      # Factores de replicación de los tópicos internos: 3, acordes a 3 brokers.
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 3
+      min.insync.replicas: 2
+  # Entity Operator: Topic y User Operator. Nacen aquí; se usan desde el Lab 03.
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}

@@ -1,0 +1,29 @@
+# Pool de brokers del clúster de pagos — PARTE 1 (storage efímero).
+# 3 réplicas: son necesarias para un replication factor de 3 en el tópico de
+# pagos y para colocar una réplica por "zona" en la parte 2.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: brokers
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  replicas: 3
+  roles:
+    - broker
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 1Gi
+  jvmOptions:
+    -Xms: 512m
+    -Xmx: 512m
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: ephemeral
+        kraftMetadata: shared
