@@ -1,0 +1,27 @@
+# Plantilla — pool de brokers al escalar. Trabaja sobre una copia. Completa el TODO.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaNodePool
+metadata:
+  name: brokers
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  # TODO: réplicas tras escalar (de 3 a ...). Pista: 4 (agregamos un broker).
+  replicas: # TODO
+  roles:
+    - broker
+  resources:
+    requests: { cpu: 250m, memory: 512Mi }
+    limits: { cpu: "1", memory: 1Gi }
+  jvmOptions:
+    -Xms: 512m
+    -Xmx: 512m
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: persistent-claim
+        size: 2Gi
+        deleteClaim: false
+        kraftMetadata: shared

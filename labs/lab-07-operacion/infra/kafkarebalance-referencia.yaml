@@ -1,0 +1,29 @@
+# REFERENCIA — KafkaRebalance en ambos modos (add-brokers y remove-brokers).
+---
+# Orden de trabajo: mover réplicas AL broker nuevo (id 4) tras escalar.
+# Cruise Control genera una PROPUESTA; nada se mueve hasta que la apruebas con
+# la annotation strimzi.io/rebalance=approve. Operación de banco: propuesta
+# legible + aprobación explícita.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: agregar-broker-4
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  mode: add-brokers
+  brokers: [4]
+---
+# Orden de trabajo inversa: VACIAR el broker 4 antes de encogerlo. Mismo patrón:
+# propuesta -> aprobación explícita (strimzi.io/rebalance=approve).
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: vaciar-broker-4
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  mode: remove-brokers
+  brokers: [4]

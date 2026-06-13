@@ -1,0 +1,14 @@
+# Plantilla — KafkaRebalance. Trabaja sobre una copia. Completa los TODO.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: agregar-broker-4
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  # TODO A: modo del rebalanceo. Pista: para mover réplicas AL broker nuevo tras
+  # escalar, es add-brokers (para vaciarlo antes de encoger, remove-brokers).
+  mode: # TODO
+  # TODO B: lista de brokers nuevos (o a vaciar). Pista: el broker nuevo es el id 4.
+  brokers: # TODO  (ejemplo: [4])

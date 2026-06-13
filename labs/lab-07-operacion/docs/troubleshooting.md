@@ -1,0 +1,11 @@
+# Troubleshooting — Lab 07
+
+| # | Problema | Causa típica | Solución |
+|---|----------|--------------|----------|
+| 1 | El `KafkaRebalance` no sale de `PendingProposal`; no hay propuesta. | Cruise Control necesita una **ventana de métricas** antes de poder proponer (recién encendido, aún no tiene datos). | Espera: la primera propuesta puede tardar varios minutos tras encender Cruise Control. Mira el estado con `kubectl get kafkarebalance <nombre> -n meridiano-pagos -w`. Si nunca llega, revisa el pod de Cruise Control. |
+| 2 | El rebalanceo no arranca tras aprobar. | La annotation de aprobación está mal puesta. | Debe ser exactamente `strimzi.io/rebalance=approve` sobre el `KafkaRebalance` correcto: `kubectl annotate kafkarebalance <nombre> -n meridiano-pagos strimzi.io/rebalance=approve`. Solo aprueba desde `ProposalReady`. |
+| 3 | El broker nuevo (4) queda `Pending`. | Recursos: el nodo no tiene memoria/CPU para otro broker. | `kubectl describe pod pagos-brokers-4 -n meridiano-pagos` (Events). Sube los recursos de Docker o cierra apps del host. |
+| 4 | El upgrade no avanza o falla. | Orden equivocado de los cambios. | Primero `spec.kafka.version` (rolling), DESPUÉS `metadataVersion`. Nunca al revés. Verifica que la versión destino esté soportada por Strimzi 0.51 (4.1.1 y 4.2.0 lo están). |
+| 5 | Tras recrear el DR, MM2 no replica. | El DR nuevo tarda en estar listo, o MM2 aún no reconectó. | Espera a que el DR esté Ready (`kubectl wait --for=condition=Ready kafka/dr -n meridiano-dr`). MM2 reconecta y repuebla el DR solo en cuanto el destino responde. |
+| 6 | El drain de un worker deja un broker de `pagos` `Pending` para siempre. | Los PVC de `pagos` usan el StorageClass local de kind: el disco está atado al nodo y el pod no puede seguirlo. | Es el comportamiento esperado en kind (ver guía 07). Haz `kubectl uncordon <nodo>` para que el broker vuelva a su nodo. En EKS, los discos EBS siguen al pod dentro de la zona, y por eso Drain Cleaner funciona allí. |
+| 7 | El pod de Cruise Control queda `OOMKilled`. | El heap/recursos de Cruise Control son demasiado bajos para el tamaño del clúster. | Sube `cruiseControl.resources.limits.memory` y `jvmOptions.-Xmx` en el CR de `pagos` y reaplica. |

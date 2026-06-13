@@ -1,0 +1,12 @@
+# Orden de trabajo inversa: VACIAR el broker 4 antes de encogerlo. Mismo patrón:
+# propuesta -> aprobación explícita (strimzi.io/rebalance=approve).
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaRebalance
+metadata:
+  name: vaciar-broker-4
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  mode: remove-brokers
+  brokers: [4]

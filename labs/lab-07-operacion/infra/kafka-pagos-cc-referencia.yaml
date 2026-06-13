@@ -1,0 +1,85 @@
+# REFERENCIA DEL INSTRUCTOR — Kafka pagos con Cruise Control. Los scripts
+# aplican soluciones/cruise-control/.
+---
+# Clúster 'pagos' con CRUISE CONTROL habilitado (= el del Lab 06 con métricas,
+# más el bloque cruiseControl). Cruise Control es un pod aparte que analiza el
+# balance del clúster y genera/ejecuta propuestas de rebalanceo.
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: pagos
+  namespace: meridiano-pagos
+spec:
+  kafka:
+    version: 4.2.0
+    metadataVersion: 4.2-IV1
+    metricsConfig:
+      type: jmxPrometheusExporter
+      valueFrom:
+        configMapKeyRef:
+          name: kafka-metrics
+          key: kafka-metrics-config.yml
+    rack:
+      topologyKey: topology.kubernetes.io/zone
+    listeners:
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: scram
+        port: 9094
+        type: internal
+        tls: false
+        authentication:
+          type: scram-sha-512
+      - name: extscram
+        port: 9095
+        type: nodeport
+        tls: true
+        authentication:
+          type: scram-sha-512
+        configuration:
+          bootstrap:
+            nodePort: 32000
+          brokers:
+            - { broker: 0, nodePort: 32001, advertisedHost: 127.0.0.1, advertisedPort: 32001 }
+            - { broker: 1, nodePort: 32002, advertisedHost: 127.0.0.1, advertisedPort: 32002 }
+            - { broker: 2, nodePort: 32003, advertisedHost: 127.0.0.1, advertisedPort: 32003 }
+      - name: extmtls
+        port: 9096
+        type: nodeport
+        tls: true
+        authentication:
+          type: tls
+        configuration:
+          bootstrap:
+            nodePort: 32004
+          brokers:
+            - { broker: 0, nodePort: 32005, advertisedHost: 127.0.0.1, advertisedPort: 32005 }
+            - { broker: 1, nodePort: 32006, advertisedHost: 127.0.0.1, advertisedPort: 32006 }
+            - { broker: 2, nodePort: 32007, advertisedHost: 127.0.0.1, advertisedPort: 32007 }
+    authorization:
+      type: simple
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 3
+      min.insync.replicas: 2
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}
+  # Cruise Control: recursos mínimos viables para 16 GB.
+  cruiseControl:
+    resources:
+      requests:
+        cpu: 200m
+        memory: 512Mi
+      limits:
+        cpu: "1"
+        memory: 1Gi
+    jvmOptions:
+      -Xms: 384m
+      -Xmx: 384m

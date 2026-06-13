@@ -1,0 +1,24 @@
+# Plantilla — DR fijado en una versión para practicar el upgrade. Solo el CR
+# Kafka (el del DR). Completa el TODO.
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: dr
+  namespace: meridiano-dr
+spec:
+  kafka:
+    # TODO A: versión de Kafka para RECREAR el DR antes del upgrade. Pista: 4.1.1.
+    version: # TODO
+    # TODO B: metadataVersion acorde. Pista: 4.1-IV1 (para 4.1.1).
+    metadataVersion: # TODO
+    listeners:
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+    config:
+      offsets.topic.replication.factor: 1
+      transaction.state.log.replication.factor: 1
+      transaction.state.log.min.isr: 1
+      default.replication.factor: 1
+      min.insync.replicas: 1

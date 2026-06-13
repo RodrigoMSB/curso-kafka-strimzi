@@ -1,0 +1,22 @@
+# REFERENCIA — Strimzi Drain Cleaner. NO se instala en este lab.
+#
+# Motivo (ver guía 07, basado en un de-risk real): en kind, los PVC locales atan
+# cada broker a su nodo, así que un drain real deja los brokers de pagos caídos
+# (indemostrable dignamente); y el webhook necesita certificados que sin
+# cert-manager son frágiles. En EKS (discos EBS que siguen al pod + cert-manager)
+# la instalación y la demo son naturales.
+#
+# Métodos oficiales de instalación (compatible con Strimzi 0.51 — Drain Cleaner 1.6.0):
+#
+# 1) Helm (autogenera los certificados del webhook):
+#    helm install strimzi-drain-cleaner strimzi/strimzi-drain-cleaner \
+#      -n strimzi-drain-cleaner --create-namespace
+#
+# 2) Manifiestos oficiales con cert-manager:
+#    kubectl apply -f https://github.com/strimzi/drain-cleaner/releases/download/1.6.0/... (install/certmanager)
+#
+# 3) Manifiestos sin cert-manager (certificados manuales):
+#    seguir install/kubernetes del repo strimzi/drain-cleaner.
+#
+# Una vez instalado, el ValidatingWebhookConfiguration intercepta las evictions de
+# los pods de Kafka y delega el rolling al operador de Strimzi (ISR primero).
