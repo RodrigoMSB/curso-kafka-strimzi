@@ -1,0 +1,20 @@
+# El tópico destino COMO CÓDIGO. Al migrar a la plataforma, el flujo HEREDA la
+# durabilidad de la plataforma, no la pobreza del legado: en el legado vivía con
+# RF=1 ("así vivíamos"); aquí nace con RF=3 y se declara de forma declarativa,
+# gestionado por el Topic Operator.
+#
+# Coincide con lo que MirrorMaker 2 crearía por sí solo (3 particiones del
+# origen; RF = default del clúster = 3). Declararlo nosotros fija la durabilidad
+# explícitamente y lo deja versionado, en vez de depender de la autocreación.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: legado.transferencias
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    min.insync.replicas: "2"

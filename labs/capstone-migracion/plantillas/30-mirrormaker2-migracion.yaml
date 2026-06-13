@@ -1,0 +1,58 @@
+# Plantilla — KafkaMirrorMaker2 del LEGADO a la plataforma (legado -> pagos).
+# Andamiaje mínimo a propósito (es un capstone). Trabaja sobre una copia.
+#
+# Recuerda la INVERSIÓN respecto al Lab 06: aquí el ORIGEN (legado) es PLAINTEXT
+# sin auth, y el DESTINO (pagos) está endurecido y necesita identidad con ACLs
+# de escritura/admin. (Ver pistas, nivel 2.)
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaMirrorMaker2
+metadata:
+  name: migracion-legado-a-pagos
+  namespace: meridiano-pagos
+spec:
+  version: 4.2.0
+  replicas: 1
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m
+  target:
+    # TODO A: alias del DESTINO. Pista: pagos
+    alias: # TODO
+    bootstrapServers: pagos-kafka-bootstrap:9094
+    # TODO B: el destino está endurecido (SCRAM). Declara la authentication del
+    #         target con la identidad nueva y su secret. (Ver soluciones/usuarios.)
+    authentication: # TODO
+    groupId: migracion-mm2-group
+    configStorageTopic: migracion-mm2-configs
+    offsetStorageTopic: migracion-mm2-offsets
+    statusStorageTopic: migracion-mm2-status
+    config:
+      config.storage.replication.factor: -1
+      offset.storage.replication.factor: -1
+      status.storage.replication.factor: -1
+  mirrors:
+    - source:
+        # TODO C: alias del ORIGEN. Pista: legado
+        alias: # TODO
+        # TODO D: bootstrap del legado (nombre del contenedor en la red de kind).
+        bootstrapServers: # TODO
+        # (El origen es PLAINTEXT: NO lleva authentication ni tls.)
+      sourceConnector:
+        tasksMax: 1
+        config:
+          replication.factor: -1
+          offset-syncs.topic.replication.factor: -1
+          sync.topic.acls.enabled: "false"
+          sync.topic.configs.enabled: "false"
+          refresh.topics.interval.seconds: 10
+          # TODO E: política que CONSERVA los nombres de tópico (sin prefijo de alias).
+          replication.policy.class: # TODO
+      checkpointConnector:
+        tasksMax: 1
+        config:
+          checkpoints.topic.replication.factor: -1
+          sync.group.offsets.enabled: "false"
+          replication.policy.class: # TODO (la misma de E)
+      # TODO F: patrón de los tópicos del legado a replicar.
+      topicsPattern: # TODO
+      groupsPattern: ".*"

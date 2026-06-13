@@ -1,0 +1,28 @@
+# La identidad NUEVA del negocio tras el cutover: el productor de transferencias
+# que, ya migrado, escribe DIRECTO en la plataforma (pagos) en vez del legado.
+#
+# Decisión de diseño (ver README y rúbrica): NO se reutiliza 'app-pagos' ni la
+# identidad amplia de MM2. Un productor de transferencias nace con su propia
+# identidad de MÍNIMO PRIVILEGIO: solo Write/Describe sobre 'legado.transferencias'.
+# Es la postura correcta de un banco — cada flujo, su credencial acotada.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: transferencias
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: legado.transferencias
+          patternType: literal
+        operations:
+          - Describe
+          - Write
+        host: "*"

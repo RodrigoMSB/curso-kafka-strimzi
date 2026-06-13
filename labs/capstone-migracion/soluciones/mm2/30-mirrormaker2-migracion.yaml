@@ -1,0 +1,76 @@
+# EL ESPEJO DE MIGRACIÓN: MirrorMaker 2 del Kafka LEGADO (origen) a la plataforma
+# 'pagos' (destino). Topología activo/pasivo durante la ventana de migración.
+#
+# Inversión respecto al Lab 06: allí el DESTINO ('dr') era abierto y el ORIGEN
+# ('pagos') autenticado. Aquí es al revés — el ORIGEN (legado) es PLAINTEXT sin
+# auth ("así vivíamos") y el DESTINO (pagos) está endurecido. Por eso:
+#   - El bloque 'source' NO lleva authentication ni tls (legado en claro).
+#   - El bloque 'target' SÍ autentica (SCRAM como 'mm2-migracion'), y ese usuario
+#     necesita ACLs de ESCRITURA/ADMIN (crea el tópico y los internos de Connect).
+#
+# IdentityReplicationPolicy: los nombres se conservan idénticos
+# (legado.transferencias -> legado.transferencias), no se prefija con el alias.
+# Es lo que permite que, tras el cutover, el productor nuevo escriba al MISMO
+# nombre de tópico sin que nada lo note.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaMirrorMaker2
+metadata:
+  name: migracion-legado-a-pagos
+  namespace: meridiano-pagos
+spec:
+  version: 4.2.0
+  replicas: 1
+  resources:
+    requests:
+      cpu: 200m
+      memory: 512Mi
+    limits:
+      cpu: "1"
+      memory: 768Mi
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m
+  # El DESTINO: la plataforma endurecida. Connect guarda aquí sus tópicos internos
+  # (configs/offsets/status), por eso autentica como 'mm2-migracion'.
+  target:
+    alias: pagos
+    bootstrapServers: pagos-kafka-bootstrap:9094
+    authentication:
+      type: scram-sha-512
+      username: mm2-migracion
+      passwordSecret:
+        secretName: mm2-migracion
+        password: password
+    groupId: migracion-mm2-group
+    configStorageTopic: migracion-mm2-configs
+    offsetStorageTopic: migracion-mm2-offsets
+    statusStorageTopic: migracion-mm2-status
+    config:
+      config.storage.replication.factor: -1
+      offset.storage.replication.factor: -1
+      status.storage.replication.factor: -1
+  mirrors:
+    # El ORIGEN: el Kafka legado, PLAINTEXT, sin authentication ni tls.
+    - source:
+        alias: legado
+        bootstrapServers: kafka-legado:9092
+      sourceConnector:
+        tasksMax: 1
+        config:
+          replication.factor: -1
+          offset-syncs.topic.replication.factor: -1
+          sync.topic.acls.enabled: "false"
+          # No pelear con el Topic Operator por la config del tópico destino:
+          # el tópico ya está declarado como código (RF=3).
+          sync.topic.configs.enabled: "false"
+          refresh.topics.interval.seconds: 10
+          replication.policy.class: org.apache.kafka.connect.mirror.IdentityReplicationPolicy
+      checkpointConnector:
+        tasksMax: 1
+        config:
+          checkpoints.topic.replication.factor: -1
+          sync.group.offsets.enabled: "false"
+          replication.policy.class: org.apache.kafka.connect.mirror.IdentityReplicationPolicy
+      # Replicar solo el flujo del legado.
+      topicsPattern: "legado\\..*"
+      groupsPattern: ".*"

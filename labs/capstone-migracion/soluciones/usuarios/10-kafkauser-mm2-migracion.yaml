@@ -1,0 +1,32 @@
+# Identidad de MirrorMaker 2 en el clúster DESTINO (pagos), endurecido.
+#
+# Diferencia clave con el Lab 06: allí 'pagos' era el ORIGEN y el usuario 'mm2'
+# solo necesitaba LEER. Aquí 'pagos' es el DESTINO: MM2 debe CREAR el tópico
+# replicado, ESCRIBIR en él y operar sus tópicos internos de Connect
+# (configs/offsets/status) y los grupos del runtime. Por eso estas ACLs son de
+# escritura/administración, no de solo lectura.
+#
+# En producción se acotan al patrón replicado y a los nombres internos exactos;
+# en el laboratorio priorizamos que MM2 opere sin fricción y lo decimos.
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: mm2-migracion
+  namespace: meridiano-pagos
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      # Crear/escribir el tópico replicado y los tópicos internos de Connect.
+      - resource: { type: topic, name: "*", patternType: literal }
+        operations: [Create, Describe, DescribeConfigs, Read, Write, Alter, AlterConfigs]
+      # Grupos de consumidores del runtime de Connect y del checkpoint connector.
+      - resource: { type: group, name: "*", patternType: literal }
+        operations: [Read, Describe]
+      # Operación a nivel de clúster (descubrir, crear, escritura idempotente).
+      - resource: { type: cluster }
+        operations: [Describe, DescribeConfigs, Create, IdempotentWrite, Alter, AlterConfigs]
