@@ -55,6 +55,12 @@ El `spec.build` del `KafkaConnect` le dice a Strimzi: toma la base de Connect,
 añade el plugin de Debezium PostgreSQL (un `.tar.gz` de Maven Central, con su
 checksum) y **empuja la imagen al registry local**.
 
+> **Decisión consciente — versión del worker.** El worker de Kafka Connect corre
+> en **4.2.0** por alineación con el resto del curso, mientras que **Debezium
+> 3.5.2.Final** está certificado oficialmente contra Kafka Connect **4.1.x**. La
+> combinación es funcional gracias a la compatibilidad de Kafka, y se mantiene
+> **4.2.0 deliberadamente** (no se baja la versión del worker).
+
 > **El build tarda varios minutos la primera vez** (descarga + construcción +
 > push). Es normal. Mira el pod de build mientras tanto:
 >
