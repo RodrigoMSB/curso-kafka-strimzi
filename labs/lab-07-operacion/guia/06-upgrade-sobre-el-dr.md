@@ -88,3 +88,47 @@ metadataVersion), pero:
   al final, cuando ya hay confianza).
 
 Mismo procedimiento, más cuidado y más café. Eso es operar un banco.
+
+## La otra versión que también se migra: la API del CR (rumbo a 1.0.0)
+
+Acabas de mover la versión de **Kafka** (los datos). Hay una segunda versión en
+juego que suena igual pero no lo es: la **versión de API del Custom Resource**
+(`kafka.strimzi.io/v1beta2` → `v1`). Y con ella, una distinción que conviene
+hacer propia:
+
+- **Servir** una versión: la API la acepta y la devuelve.
+- **Almacenar** una versión: en cuál quedan escritos los objetos en etcd.
+
+Un CRD puede **servir varias** versiones a la vez, pero **almacena en una sola**.
+Compruébalo en tu propio clúster:
+
+```bash
+kubectl get crd kafkas.kafka.strimzi.io \
+  -o jsonpath='{range .spec.versions[*]}{.name}{" served="}{.served}{" storage="}{.storage}{"\n"}{end}'
+kubectl get crd kafkas.kafka.strimzi.io -o jsonpath='storedVersions={.status.storedVersions}{"\n"}'
+```
+
+```text
+Salida esperada (Strimzi 0.51)
+v1 served=true storage=false
+v1beta2 served=true storage=true
+storedVersions=["v1beta2"]
+```
+
+Strimzi 0.51 ya **sirve** `v1` —por eso, al leer un CR, el server te responde
+`apiVersion: kafka.strimzi.io/v1`, convertido al vuelo por un webhook—, pero
+todavía **almacena** en `v1beta2`. Lo viste desde el Lab 01, cuando el CRD
+listaba `v1beta2 v1`.
+
+¿Por qué importa esto? **Strimzi 1.0.0 elimina `v1beta2`** y deja solo `v1`. Pero
+tus objetos siguen guardados como `v1beta2`: si esa versión desaparece sin más,
+el API server ya no sabría leerlos. Por eso, **antes** del salto a 1.0.0 hay que
+hacer una **migración de storage version**: reescribir cada CR para que quede
+almacenado como `v1` y actualizar `storedVersions` a `["v1"]`. Servir `v1` fue
+gratis y transparente; **cambiar la versión almacenada es la migración de
+verdad**, y es la razón concreta por la que subir a 1.0.0 no es "solo actualizar
+el operador".
+
+> En este lab no ejecutamos esa migración (llega con la 1.0.0). Pero ahora sabes
+> que existe, por qué existe, y cómo ver su rastro en el CRD: servido en `v1`,
+> almacenado en `v1beta2`, esperando el día del salto.
