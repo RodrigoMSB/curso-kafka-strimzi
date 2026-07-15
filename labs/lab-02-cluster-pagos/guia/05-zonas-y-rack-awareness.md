@@ -29,10 +29,15 @@ meridiano-worker2         Ready    <none>          ...   zona-b
 meridiano-worker3         Ready    <none>          ...   zona-c
 ```
 
-## 2. Habilita rack awareness en el clúster
+## 2. Habilita rack awareness en el clúster vivo
 
-Ahora le decimos a Kafka que use esa etiqueta como "rack". En tu copia del
-`Kafka`, completa el bloque `rack` (TODO D de la plantilla):
+En la guía 4, cambiar el **storage** nos obligó a **destruir y recrear** el
+clúster: hay decisiones que se toman el día cero y no se tocan en caliente. El
+`rack` es lo contrario: se **añade sobre el clúster corriendo** y el operador lo
+propaga sin downtime. Vamos a verlo con nuestros ojos.
+
+En tu copia del `Kafka` (`mi-kafka.yaml`), completa el bloque `rack`
+(TODO D de la plantilla):
 
 **ANTES** (comentado en la plantilla):
 
@@ -54,20 +59,26 @@ Ahora le decimos a Kafka que use esa etiqueta como "rack". En tu copia del
       topologyKey: topology.kubernetes.io/zone
 ```
 
-Aplícalo:
+Aplícalo **sobre el clúster que ya está corriendo** (no borras nada):
 
 ```bash
 kubectl apply -n meridiano-pagos -f mi-kafka.yaml
 ```
 
-El operador hará un **rolling update**: reinicia los brokers de a uno, sin
-cortar el servicio, para inyectarles su zona. Obsérvalo:
+El operador no destruye el clúster: hace un **rolling update**. Reinicia los
+brokers **de a uno**, esperando que cada uno vuelva a estar sano antes de tocar
+el siguiente, para inyectarles su zona sin cortar el servicio. Míralo en vivo:
 
 ```bash
 kubectl get pods -n meridiano-pagos -w
 ```
 
-Espera a que termine (todos `Running` de nuevo) y a que el clúster vuelva a Ready:
+Verás el patrón del rolling update: un broker pasa a `Terminating`, vuelve como
+`Running`, y solo entonces le toca al siguiente. En ningún momento se caen los
+tres a la vez: el clúster sigue sirviendo pagos mientras se actualiza. (Corta con
+`Ctrl-C` cuando los tres estén `Running` otra vez.)
+
+Espera a que termine y a que el clúster vuelva a Ready:
 
 ```bash
 kubectl wait --for=condition=Ready kafka/pagos -n meridiano-pagos --timeout=300s
@@ -96,6 +107,20 @@ caen en tres zonas distintas: perder una zona deja siempre dos réplicas vivas.
 > Con exactamente 3 brokers en 3 zonas, "una réplica por broker" ya es "una
 > réplica por zona". El valor de rack awareness se nota cuando hay más brokers
 > que zonas: ahí evita que dos réplicas de la misma partición caigan juntas.
+
+## La lección: dos cambios, dos caminos
+
+Guarda esta comparación, porque es el corazón del Lab 02:
+
+- El **storage** (guía 4) **no se cambia en caliente**. El operador ignora el
+  cambio y avisa con un `Warning`; hubo que **destruir y recrear** el clúster
+  para pasar a persistente.
+- El **rack** (esta guía) **sí se cambia en caliente**. El operador lo aplicó
+  **sobre el clúster vivo**, con un rolling update ordenado y sin downtime.
+
+El mismo operador, dos respuestas opuestas, según lo que puede o no rehacerse sin
+riesgo. Saber cuál es cuál —qué se decide el día cero y qué se ajusta con el
+clúster corriendo— es lo que separa operar Kafka de solo instalarlo.
 
 ## Verificación final del lab
 
