@@ -69,6 +69,39 @@ else
   errores=$((errores + 1))
 fi
 
+# 2b. Aviso de skew de versiones (kubectl vs API server, o el pin del kind-config).
+# La política de skew de Kubernetes soporta como máximo ±1 minor entre kubectl y
+# el API server. Con un desfase mayor algunas operaciones pueden comportarse de
+# forma inesperada. Lo importante: kubectl NO avisa solo de este desfase (probado
+# en la práctica), así que lo señalamos nosotros. Es un aviso [INFO], no un
+# [ERROR]: no suma al contador ni bloquea el lab, que funciona incluso con 2
+# minors de diferencia.
+cli_raw=""; srv_raw=""; origen=""
+cli_raw=$(kubectl version --client 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+srv_raw=$(kubectl version --request-timeout=5s 2>/dev/null | grep -i server | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+if [ -n "$srv_raw" ]; then
+  origen="el API server"
+else
+  # Sin clúster todavía: comparamos contra la versión pineada de los nodos.
+  archivo_cfg="$DIR_SCRIPT/../infra/kind-config.yaml"
+  srv_raw=$(grep -oE 'kindest/node:v[0-9]+\.[0-9]+\.[0-9]+' "$archivo_cfg" 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1 || true)
+  origen="el pin del kind-config (aún no hay clúster)"
+fi
+if [ -n "$cli_raw" ] && [ -n "$srv_raw" ]; then
+  c=${cli_raw#v}; s=${srv_raw#v}
+  c_major=${c%%.*}; c_min=${c#*.}; c_min=${c_min%%.*}
+  s_major=${s%%.*}; s_min=${s#*.}; s_min=${s_min%%.*}
+  if [ "$c_major" = "$s_major" ]; then
+    gap=$((c_min - s_min))
+    if [ "$gap" -lt 0 ]; then gap=$((0 - gap)); fi
+    if [ "$gap" -gt 1 ]; then
+      msg_info "Aviso de skew: kubectl ${cli_raw} frente a ${origen} ${srv_raw} → ${gap} minors de diferencia."
+      msg_info "La política de skew de Kubernetes soporta ±1 minor entre kubectl y el API server, y kubectl no te avisará solo de este desfase."
+      msg_info "No es un error: el lab está probado y funciona con este gap. Si quieres alinearlo, usa un kubectl más cercano a ${srv_raw}."
+    fi
+  fi
+fi
+
 # 3. Conectividad básica: resolución de strimzi.io.
 if verificar_comando nslookup && nslookup strimzi.io >/dev/null 2>&1; then
   msg_ok "Resolución DNS de strimzi.io correcta."
