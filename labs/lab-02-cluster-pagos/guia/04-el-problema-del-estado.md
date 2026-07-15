@@ -99,24 +99,59 @@ Como el storage se decide al nacer, para cambiarlo se **recrea** el clúster de
 forma declarativa. En este laboratorio aún no hay datos que valga la pena
 conservar (acabamos de perderlos), así que es el momento perfecto.
 
-Borra los tres recursos y vuelve a aplicarlos en su versión persistente. Las
-soluciones de la parte 2 ya traen `persistent-claim`:
+Borra los tres recursos y **espera a que el operador termine de desmontarlos**
+antes de volver a aplicarlos en su versión persistente. Las soluciones de la
+parte 2 ya traen `persistent-claim` (y todavía **sin** rack: el rack llega en la
+guía 05):
 
 ```bash
 kubectl delete kafka pagos -n meridiano-pagos
 kubectl delete kafkanodepool brokers controllers -n meridiano-pagos
 
+# Espera a que los pods del clúster desaparezcan del todo antes de recrear.
+kubectl wait --for=delete pod -l strimzi.io/cluster=pagos -n meridiano-pagos --timeout=300s
+
 kubectl apply -n meridiano-pagos -f soluciones/parte-2-persistente/
 ```
 
-> Más adelante (guía 05) este `kafka-pagos.yaml` ya trae el bloque `rack`. No te
-> preocupes por él todavía; lo explicamos en la siguiente guía.
+> **¿Por qué ese `kubectl wait --for=delete`?** No es un adorno. Sin él, el
+> `apply` llega mientras el operador todavía está desmontando los pods viejos. En
+> ese instante el operador no ve un clúster nuevo: ve el **mismo** clúster con un
+> cambio de storage de `ephemeral` a `persistent-claim` — exactamente el cambio
+> que en el §2 acabas de comprobar que **no se permite en caliente**. Lo ignora,
+> te avisa con el mismo `Warning KafkaStorage`, y el clúster se queda en
+> `ephemeral` sin que se note. La espera garantiza que los pools nacen de cero,
+> de verdad persistentes. Es el mismo pozo del §2, con una línea que te salva.
 
 Espera a que el clúster vuelva a estar Ready:
 
 ```bash
 kubectl wait --for=condition=Ready kafka/pagos -n meridiano-pagos --timeout=600s
 ```
+
+### Comprueba que la persistencia quedó de verdad
+
+El modo de fallo de este paso es **silencioso**: el clúster puede reportar
+`Ready` y verse perfecto aun estando todavía sobre `emptyDir`. No te fíes de
+`Ready`; exige la prueba física, los PVC:
+
+```bash
+kubectl get pvc -n meridiano-pagos
+```
+
+```text
+Salida esperada (puede variar levemente)
+NAME                         STATUS   VOLUME   CAPACITY   ACCESS MODES   STORAGECLASS
+data-0-pagos-brokers-0       Bound    pvc-...  2Gi        RWO            standard
+data-0-pagos-brokers-1       Bound    pvc-...  2Gi        RWO            standard
+data-0-pagos-brokers-2       Bound    pvc-...  2Gi        RWO            standard
+data-0-pagos-controllers-3   Bound    pvc-...  1Gi        RWO            standard
+```
+
+Cuatro PVC en estado **Bound** (uno por broker y uno por el controller): esa es
+la prueba de que el almacenamiento sobrevivirá al reinicio de los pods. Si en
+cambio ves *"No resources found"*, el cambio de storage se ignoró: repite el
+borrado y esta vez deja que el `wait --for=delete` termine antes de re-aplicar.
 
 Vuelve a crear el tópico (guía 3) y produce un mensaje nuevo.
 
