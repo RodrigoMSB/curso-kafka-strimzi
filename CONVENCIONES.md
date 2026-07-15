@@ -27,6 +27,27 @@ Cada lab vive bajo `labs/<lab>/` y contiene:
 | `95` | **Recuperación** del estado final del lab desde `soluciones/`, sin interacción. Se declara exitoso solo si el `90` pasa. |
 | `99` | **Destrucción** del clúster. Interactivo por defecto; flag `--si` para uso no interactivo (lo usa el `91`). |
 
+## El `91` certifica desde cero: es un gate de arranque, no de cierre
+
+El `91-test-e2e.sh` certifica el lab **de cero a fin** en un ambiente nuevo. Por
+diseño, su **Fase 0 es una guardia**: si ya existe un clúster con el nombre
+objetivo, **aborta sin destruir nada** y explica cómo proceder (destruir el
+clúster a mano, o certificar con otro nombre vía la variable `..._E2E_CLUSTER`).
+Nunca certifica encima de un entorno de trabajo real.
+
+De ahí una consecuencia que conviene tener clara: **el `91` es un gate de
+arranque, no de cierre.** Se corre sobre un host limpio, *antes* de desplegar.
+**No** se corre *después* de un despliegue persistente para "cerrar" el trabajo:
+sobre un entorno vivo, su guardia lo hará abortar (correctamente). Verificar el
+estado de un entorno ya desplegado es tarea del `90` (test pasivo de estado), que
+sí es de cierre y no destruye nada.
+
+Regla práctica: pedir "corre el `91` y deja el entorno vivo" es contradictorio
+por diseño — el `91` termina destruyendo lo que creó (salvo el flag
+`--conservar`, pensado para inspeccionar una falla). Si necesitas un entorno vivo
+y verde, usa el `95` (recuperación) y el `90` (verificación); reserva el `91`
+para certificar desde cero en una máquina limpia.
+
 ## Reglas de los scripts
 
 - Bash portable para macOS y WSL2: sin GNU-ismos (nada de `sed -i` sin sufijo, `readarray`, etc.).
