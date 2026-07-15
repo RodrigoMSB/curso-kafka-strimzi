@@ -2,9 +2,10 @@
 # Recuperación del Lab 02: reconstruye el ESTADO FINAL del lab (clúster Kafka de
 # pagos persistente, con rack y el tópico creado) sin interacción.
 #
-# Encadena el 95 del Lab 01 (clúster + operador) y luego despliega el Lab 02
-# desde soluciones/parte-2-persistente. Se declara exitoso solo si el test 90
-# del Lab 02 pasa: hereda su exit code.
+# Encadena el 95 del Lab 01 (clúster + operador) y luego despliega el ESTADO
+# FINAL del Lab 02: los nodepools persistentes de soluciones/parte-2-persistente/
+# más el Kafka con rack de soluciones/parte-3-rack/. Se declara exitoso solo si
+# el test 90 del Lab 02 pasa: hereda su exit code.
 #
 # LAB01_CLUSTER permite usar otro nombre de clúster (consistente con el molde).
 set -euo pipefail
@@ -20,7 +21,11 @@ CLUSTER="pagos"
 BOOTSTRAP="pagos-kafka-bootstrap:9092"
 TOPICO="pagos.meridiano.transacciones"
 LAB01_95="$DIR_SCRIPT/../../lab-01-cimientos/bin/95-recuperar-lab.sh"
-SOL="$DIR_SCRIPT/../soluciones/parte-2-persistente"
+# Estado final = nodepools persistentes (parte 2) + Kafka con rack (parte 3).
+# Los nodepools NO cambian entre la parte 2 y la 3: rack es un cambio solo en el
+# Kafka CR, aplicable en caliente (ver guía 05).
+SOL_PERSISTENTE="$DIR_SCRIPT/../soluciones/parte-2-persistente"
+SOL_RACK="$DIR_SCRIPT/../soluciones/parte-3-rack"
 TIMEOUT_KAFKA="600s"
 
 msg_info "Este script reconstruye el resultado del Lab 02 sin pasar por las guías."
@@ -40,9 +45,12 @@ msg_ok "Estado del Lab 01 reconstruido."
 # 2. Etiquetar zonas ANTES de aplicar el clúster con rack.
 bash "$DIR_SCRIPT/01-etiquetar-zonas.sh"
 
-# 3. Aplicar la solución de la parte 2 (persistente + rack).
+# 3. Aplicar el estado final: nodepools persistentes (parte 2) + Kafka con rack
+#    (parte 3). El recuperador no separa los estados como las guías porque no
+#    enseña: reconstruye el resultado en un solo paso.
 msg_info "Aplicando el clúster de pagos (persistente + rack)..."
-kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL"
+kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL_PERSISTENTE"
+kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL_RACK"
 
 # 4. Esperar a que el clúster Kafka esté Ready.
 msg_info "Esperando a que el clúster Kafka esté Ready (máximo ${TIMEOUT_KAFKA}, la primera vez baja la imagen)..."

@@ -1,6 +1,8 @@
-# REFERENCIA DEL INSTRUCTOR — clúster de pagos en versión PERSISTENTE + RACK
-# (parte 2, estado final del lab). Material de lectura; los scripts aplican las
-# soluciones de soluciones/parte-2-persistente/.
+# REFERENCIA DEL INSTRUCTOR — clúster de pagos en su ESTADO FINAL: persistente
+# + rack. Material de lectura en un solo archivo. El estado final se compone de
+# dos carpetas de soluciones: los nodepools persistentes de
+# soluciones/parte-2-persistente/ más el Kafka con rack de soluciones/parte-3-rack/.
+# Los scripts (95/91) aplican esas dos carpetas; este archivo solo se lee.
 ---
 apiVersion: kafka.strimzi.io/v1
 kind: KafkaNodePool

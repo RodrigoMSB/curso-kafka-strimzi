@@ -91,7 +91,7 @@ rack=$(kubectl get kafka "$CLUSTER" -n "$NS" --context "$CONTEXTO" \
   -o jsonpath='{.spec.kafka.rack.topologyKey}' 2>/dev/null || true)
 if [ -n "$rack" ]; then r=0; else r=1; fi
 verificar "Rack awareness habilitado en el CR (topologyKey=${rack:-ausente})" "$r" \
-  "Aplica la solución de la parte 2 (soluciones/parte-2-persistente/20-kafka-pagos.yaml); ver guía 05."
+  "Aplica el Kafka con rack (soluciones/parte-3-rack/20-kafka-pagos.yaml); ver guía 05."
 
 # Imagen de Kafka: la del broker real (evita adivinar el tag).
 IMG=$(kubectl get pods -n "$NS" --context "$CONTEXTO" \

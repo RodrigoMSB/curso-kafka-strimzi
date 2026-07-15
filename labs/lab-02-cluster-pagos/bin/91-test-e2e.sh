@@ -21,7 +21,9 @@ CLUSTER="pagos"
 BOOTSTRAP="pagos-kafka-bootstrap:9092"
 TOPICO="pagos.meridiano.transacciones"
 LAB01_95="$DIR_SCRIPT/../../lab-01-cimientos/bin/95-recuperar-lab.sh"
-SOL="$DIR_SCRIPT/../soluciones/parte-2-persistente"
+# Estado final = nodepools persistentes (parte 2) + Kafka con rack (parte 3).
+SOL_PERSISTENTE="$DIR_SCRIPT/../soluciones/parte-2-persistente"
+SOL_RACK="$DIR_SCRIPT/../soluciones/parte-3-rack"
 TIMEOUT_KAFKA="600s"
 
 CONSERVAR=0
@@ -101,9 +103,14 @@ if ! correr bash "$DIR_SCRIPT/01-etiquetar-zonas.sh"; then
   limpieza_cluster; finalizar 1 "Fase 2 (etiquetado de zonas)"
 fi
 
-if ! correr kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL"; then
+if ! correr kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL_PERSISTENTE"; then
   res_f2="FALLO"; reportar_fallo 2 "kubectl apply -n ${NS} -f soluciones/parte-2-persistente"
-  limpieza_cluster; finalizar 1 "Fase 2 (aplicar manifiestos)"
+  limpieza_cluster; finalizar 1 "Fase 2 (aplicar nodepools persistentes)"
+fi
+
+if ! correr kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL_RACK"; then
+  res_f2="FALLO"; reportar_fallo 2 "kubectl apply -n ${NS} -f soluciones/parte-3-rack"
+  limpieza_cluster; finalizar 1 "Fase 2 (aplicar Kafka con rack)"
 fi
 
 if ! correr kubectl wait --for=condition=Ready "kafka/${CLUSTER}" -n "$NS" --context "$CONTEXTO" --timeout="$TIMEOUT_KAFKA"; then

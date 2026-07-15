@@ -1,7 +1,11 @@
-# Clúster Kafka de pagos — PARTE 2 (con rack awareness).
-# Igual que la parte 1, más el bloque 'rack': el operador inyecta en cada broker
-# la zona del nodo donde corre (leída de la etiqueta topology.kubernetes.io/zone)
-# y Kafka reparte las réplicas de cada partición entre zonas distintas.
+# Clúster Kafka de pagos — PARTE 2 (persistente, todavía SIN rack).
+# El almacenamiento ya es persistente (vive en los KafkaNodePool de esta misma
+# carpeta): el clúster sobrevive al reinicio de los pods. El rack awareness NO se
+# activa aquí a propósito. Es el corazón del lab: cambiar el storage NO se puede
+# en caliente (el operador ignora el cambio y avisa; hay que destruir y recrear,
+# guía 04), mientras que activar rack SÍ se puede en caliente (el operador hace
+# un rolling update, guía 05). Por eso los dos estados viajan separados.
+# El estado final, con rack, está en soluciones/parte-3-rack/.
 apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:
@@ -10,10 +14,6 @@ spec:
   kafka:
     version: 4.2.0
     metadataVersion: 4.2-IV1
-    # Rack awareness: la clave de topología es la etiqueta estándar de zona.
-    # Los tres workers se etiquetan con bin/01-etiquetar-zonas.sh.
-    rack:
-      topologyKey: topology.kubernetes.io/zone
     listeners:
       - name: plain
         port: 9092
