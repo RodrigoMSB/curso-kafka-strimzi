@@ -56,12 +56,23 @@ Salida esperada (puede variar levemente)
 
 [OK] Docker está accesible y corriendo.
 [OK] kind presente: kind v0.32.0 go1.26.3 darwin/arm64
-[OK] kubectl presente: Client Version: v1.34.x
+[OK] Versión de kind suficiente (detectada 0.32.0, mínimo v0.32.0).
+[OK] kubectl presente: Client Version: v1.3x.x
 [OK] helm presente: v4.x.x
 [OK] Resolución DNS de strimzi.io correcta.
 
 [OK] Entorno en verde. Puedes continuar con bin/01-crear-cluster.sh.
 ```
+
+La versión exacta de `kubectl`, `kind` y `helm` puede variar según tu equipo;
+lo importante es que cada línea aparezca en verde.
+
+Si tu `kubectl` es dos o más *minors* más nuevo que la versión del clúster (por
+ejemplo, un kubectl 1.36 con los nodos fijados en 1.34), verás además un aviso
+`[INFO]` de *skew*. Es informativo, no un error: la política de skew de
+Kubernetes recomienda no pasar de ±1 minor entre kubectl y el API server, pero
+el lab está probado y funciona igual. kubectl no te avisa solo de este desfase;
+por eso lo hace el verificador.
 
 Si algún ítem aparece como `[ERROR]`, no continúes: revisa
 `docs/troubleshooting.md` y resuélvelo primero.
