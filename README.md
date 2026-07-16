@@ -2,6 +2,24 @@
 
 Curso de 14 horas sobre Strimzi 0.51, Kafka en modo KRaft (versión según matriz de soporte de Strimzi 0.51) y Kubernetes.
 
+## Prerrequisitos de hardware (prerequisito duro — léelo antes de la sala)
+
+Todo el curso corre en local sobre Docker + kind. El clúster es único y **crece
+lab a lab**; el pico está en el **Lab 06**, donde conviven **dos** clústeres Kafka
+(`pagos` + `dr`) más MirrorMaker 2, Kafka Connect, PostgreSQL, Prometheus y
+Grafana. Medido en el pico: **≈ 6,25 GiB** de memoria real de contenedores.
+
+- **Mínimo: 16 GB de RAM** en la máquina **y Docker Desktop configurado con
+  ≥ 8 GB** de memoria (recomendado 10 GB). En Docker Desktop se ajusta en
+  *Settings → Resources → Memory*.
+- **8 GB de RAM no alcanza:** el Lab 06 no levanta (pods `Pending`/`OOMKilled`).
+- Cierra aplicaciones pesadas del host (navegadores con muchas pestañas, otros
+  IDEs) durante los labs pesados: la RAM que se lleve el host se la quita a Docker.
+
+> Si tu laptop tiene 16 GB pero Docker Desktop está en su asignación por defecto
+> (a menudo menos de 8 GB), **súbela antes de empezar**. El verificador del Lab 01
+> (`bin/00-verificar-entorno.sh`) te avisa si Docker tiene menos de 8 GB.
+
 ## Estructura de carpetas
 
 - `docs/guiones-slides/` — Guiones de las diapositivas y material de apoyo de las sesiones.

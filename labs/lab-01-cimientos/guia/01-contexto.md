@@ -42,6 +42,17 @@ Esta separación también prepara el terreno para el RBAC que revisaremos en la
 Guía 4: el operador vive en un sitio pero necesita permisos sobre otro, y eso
 no es casualidad, es diseño.
 
+## Prerrequisito de hardware (no negociable)
+
+Todo el curso corre en local sobre Docker + kind, en un **único clúster que crece
+lab a lab**. El pico es el Lab 06 (dos clústeres Kafka + MM2 + Connect + PostgreSQL
++ Prometheus + Grafana, ≈ 6,25 GiB). Por eso:
+
+- **Mínimo 16 GB de RAM** en la máquina **y Docker Desktop con ≥ 8 GB** asignados
+  (recomendado 10). Se ajusta en *Docker Desktop → Settings → Resources → Memory*.
+- **Con 8 GB de RAM el curso no corre** (el Lab 06 no levanta). El verificador de
+  abajo te avisa si Docker tiene menos de 8 GB.
+
 ## Antes de continuar: verifica tu entorno
 
 Ejecuta el verificador de entorno y confirma que todo aparezca en verde:

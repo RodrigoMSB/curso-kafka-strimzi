@@ -19,6 +19,25 @@ else
   errores=$((errores + 1))
 fi
 
+# 1b. Memoria asignada a Docker. El curso necesita >= 8 GiB para el pico del
+# Lab 06 (dos clústeres Kafka + MM2 + Connect + PostgreSQL + Prometheus + Grafana,
+# ~6.25 GiB). Es un aviso [INFO], no un [ERROR]: no suma al contador ni bloquea —
+# mismo criterio que el aviso de skew. Con 8 GB de RAM de host, el Lab 06 no cabe.
+mem_bytes=$(docker info --format '{{.MemTotal}}' 2>/dev/null || true)
+case "$mem_bytes" in
+  ''|*[!0-9]*) : ;;   # no disponible o no numérico: no avisamos
+  *)
+    umbral=$((8 * 1024 * 1024 * 1024))          # 8 GiB en bytes
+    mem_gib=$((mem_bytes / 1024 / 1024 / 1024))
+    if [ "$mem_bytes" -lt "$umbral" ]; then
+      msg_info "Docker tiene ~${mem_gib} GiB asignados; el curso necesita >= 8 GiB para el pico del Lab 06."
+      msg_info "Súbelo en Docker Desktop → Settings → Resources → Memory (recomendado 10 GiB); con menos, el Lab 06 puede dejar pods en Pending/OOMKilled."
+    else
+      msg_ok "Memoria de Docker suficiente (~${mem_gib} GiB, mínimo 8 GiB)."
+    fi
+    ;;
+esac
+
 # 2. Herramientas presentes, imprimiendo su versión.
 # kind debe ser v0.32.0 o superior: es la release que publica el digest pineado
 # de kindest/node:v1.34.8 y el containerd compatible.
