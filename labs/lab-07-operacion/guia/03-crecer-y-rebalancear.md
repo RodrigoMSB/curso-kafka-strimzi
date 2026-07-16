@@ -12,7 +12,19 @@ Sobre una copia de `plantillas/05-nodepool-brokers-escalar.yaml`, completa el TO
 ```bash
 kubectl apply -n meridiano-pagos -f mi-brokers.yaml
 kubectl wait --for=condition=Ready kafka/pagos -n meridiano-pagos --timeout=600s
+
+# Espera a que el broker NUEVO esté 1/1 y registrado, no solo el CR en Ready:
+kubectl wait --for=condition=Ready pod/pagos-brokers-4 -n meridiano-pagos --timeout=300s
 ```
+
+> **Por qué esa segunda espera.** Cruise Control toma una **foto** del clúster
+> cuando arranca el rebalanceo. Si aplicas el `KafkaRebalance` (paso 2) antes de
+> que `pagos-brokers-4` esté realmente listo y registrado, el broker 4 no aparece
+> en la foto y el rebalance queda `NotReady` con
+> `IllegalArgumentException: Some/all brokers specified don't exist` — y **no se
+> recupera solo** (hay que borrarlo y volver a crearlo). El `kafka/pagos` en
+> `Ready` no garantiza que el broker nuevo ya esté arriba; por eso esperamos al
+> pod, no solo al CR.
 
 El broker nuevo es `pagos-brokers-4`. Comprueba que **nació vacío** (ninguna
 partición vive ahí). Mira el tópico de transacciones desde el pod cliente:
