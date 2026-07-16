@@ -6,16 +6,33 @@ luego lo quitas.
 
 ## 1. Vaciar el broker 4: KafkaRebalance remove-brokers
 
-Antes de quitar el broker 4, hay que mover sus réplicas a los demás. Sobre tu
-copia del `KafkaRebalance`:
+Antes de quitar el broker 4, hay que mover sus réplicas a los demás. Copia tu
+`KafkaRebalance` a un archivo nuevo (`mi-remove.yaml`) y cámbiale **el nombre y
+el modo**: es un rebalanceo distinto, con su **propio nombre** (`vaciar-broker-4`).
 
-**DESPUÉS** (modo inverso):
+**ANTES** (tu copia de add-brokers):
 
 ```yaml
+metadata:
+  name: agregar-broker-4
+spec:
+  mode: add-brokers
+  brokers: [4]
+```
+
+**DESPUÉS** (nombre nuevo y modo inverso):
+
+```yaml
+metadata:
+  name: vaciar-broker-4
 spec:
   mode: remove-brokers
   brokers: [4]
 ```
+
+> **No reutilices el nombre `agregar-broker-4`.** Los comandos de abajo y el
+> `90-test` buscan `vaciar-broker-4`; si dejas el nombre viejo, `kubectl` no lo
+> encuentra y el test no ve el segundo rebalanceo.
 
 ```bash
 kubectl apply -n meridiano-pagos -f mi-remove.yaml
