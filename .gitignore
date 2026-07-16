@@ -22,10 +22,12 @@ kubeconfig*
 tmp/
 dist/
 
-# Archivos de trabajo del alumno (copias de plantillas que el alumno completa)
-mi-values.yaml
-mi-kafka.yaml
-mis-*.yaml
+# Archivos de trabajo del alumno (copias de plantillas que el alumno completa).
+# Las guías mandan crear copias tipo mi-*.yaml / mis-*.yaml (y el runbook del
+# capstone, mi-runbook.md): nunca se versionan, son el borrador de cada alumno.
+mi-*.yaml
+mi-*.md
+mis-*
 
 # Credenciales extraídas para el acceso externo (Lab 04) — nunca se versionan
 credenciales/
