@@ -6,14 +6,30 @@
 
 Recreamos el `dr` fijado en **Kafka 4.1.1** y lo subimos a **4.2.0**.
 
-## 1. Recrear el DR en 4.1.1
+## 1. Recrear el DR en 4.1.1 — sin dejar a MM2 atrás
 
-El DR es efímero y RF=1: recrearlo es barato, y **MM2 lo repuebla solo** (eso
-también es lección de contingencia). Borra y recrea fijado en 4.1.1:
+Aquí hay una trampa que en un banco te cuesta un simulacro fallido, así que la
+enfrentamos de frente. **MirrorMaker 2 corre sobre Kafka Connect, y Connect
+guarda su estado —configs, offsets, status— en tópicos internos que viven DENTRO
+del clúster destino, el `dr`.** Y el `dr` es de **storage efímero y un solo
+nodo**: cualquier cosa que reinicie ese pod —recrearlo (este paso) **o** el
+rolling del upgrade (paso 2)— **borra esos tópicos internos** y deja a MM2 con el
+herder de Connect huérfano; el `MirrorSourceConnector` pierde su task y la réplica
+**no vuelve sola**. No es un bug del lab: es cómo funciona Connect en distribuido,
+y es justo lo que explota en un simulacro de contingencia real.
+
+La consecuencia práctica: **paramos MM2 ahora y no lo traemos de vuelta hasta el
+paso 3**, cuando el DR ya esté en su versión final y no vaya a reiniciarse más.
+Traerlo entre medias no sirve: el upgrade del paso 2 lo volvería a tumbar.
 
 ```bash
+# Para MM2 ANTES de tocar el DR. NO lo recreamos aquí: eso es el paso 3.
+kubectl delete kafkamirrormaker2 pagos-a-dr -n meridiano-pagos
+
+# Recrea el DR fijado en 4.1.1 (espera a que el teardown termine).
 kubectl delete kafka dr -n meridiano-dr
 kubectl delete kafkanodepool dr-nodes -n meridiano-dr
+kubectl wait --for=delete pod -l strimzi.io/cluster=dr -n meridiano-dr --timeout=300s
 kubectl apply -f soluciones/dr-upgrade/10-dr-4.1.1.yaml
 kubectl wait --for=condition=Ready kafka/dr -n meridiano-dr --timeout=600s
 ```
@@ -28,8 +44,6 @@ kubectl get kafka dr -n meridiano-dr -o jsonpath='{.spec.kafka.version}{"\n"}'
 Salida esperada
 4.1.1
 ```
-
-(MM2 vuelve a replicar hacia el DR recreado en cuanto está listo.)
 
 ## 2. El upgrade declarativo: primero la versión, después la metadata
 
@@ -60,14 +74,37 @@ Salida esperada
 version=4.2.0 metadata=4.2-IV1
 ```
 
-## 3. Verificar que la réplica sobrevivió al upgrade
+## 3. Recrear MM2 y verificar que la réplica quedó restaurada
 
-Produce en `pagos` y comprueba que el evento llega al `dr` (ya en 4.2.0):
+El `dr` ya está en 4.2.0 y **no se va a reiniciar más**: recién ahora es seguro
+traer MM2 de vuelta. Reutiliza tu manifiesto de MM2 del Lab 06 (`mi-mm2.yaml`);
+si arrancaste desde el `95` y no lo tienes, está la solución del Lab 06:
+
+```bash
+kubectl apply -n meridiano-pagos \
+  -f ../lab-06-contingencia-ojos/soluciones/mm2/20-mirrormaker2.yaml
+kubectl wait --for=condition=Ready kafkamirrormaker2/pagos-a-dr -n meridiano-pagos --timeout=600s
+```
+
+> **Si MM2 entra en `CrashLoopBackOff`** con `Failed to start Connect: Unable to
+> initialize REST resources`, quedaron tópicos internos residuales de un intento
+> anterior en el DR. Bórralos y vuelve a aplicar MM2:
+>
+> ```bash
+> kubectl delete kafkamirrormaker2 pagos-a-dr -n meridiano-pagos
+> kubectl run limpia --rm -i --restart=Never -n meridiano-dr \
+>   --image=quay.io/strimzi/kafka:0.51.0-kafka-4.2.0 --command -- bash -c \
+>   'for t in mm2-dr-configs mm2-dr-offsets mm2-dr-status; do bin/kafka-topics.sh --bootstrap-server dr-kafka-bootstrap:9092 --delete --topic $t; done'
+> kubectl apply -n meridiano-pagos -f ../lab-06-contingencia-ojos/soluciones/mm2/20-mirrormaker2.yaml
+> ```
+
+Con MM2 de vuelta sobre el DR ya actualizado, comprueba que un evento nuevo de
+`pagos` llega al `dr` (ya en 4.2.0):
 
 ```bash
 kubectl exec -i cliente-kafka -n meridiano-pagos -- bash -c \
   'echo "post-upgrade" | bin/kafka-console-producer.sh --bootstrap-server pagos-kafka-bootstrap:9094 \
-   --producer.config /props/app-pagos.properties --topic pagos.meridiano.transacciones'
+   --command-config /props/app-pagos.properties --topic pagos.meridiano.transacciones'
 
 kubectl run dr-cons --rm -i --restart=Never -n meridiano-dr \
   --image=quay.io/strimzi/kafka:0.51.0-kafka-4.2.0 --command -- \
@@ -75,7 +112,8 @@ kubectl run dr-cons --rm -i --restart=Never -n meridiano-dr \
   --topic pagos.meridiano.transacciones --from-beginning --timeout-ms 20000 | grep post-upgrade
 ```
 
-La réplica siguió funcionando tras el upgrade.
+La réplica quedó restaurada: tras recrear MM2 sobre el DR ya estable, los eventos
+nuevos vuelven a llegar al DR, ahora en 4.2.0.
 
 ## El mapa para el primario
 
