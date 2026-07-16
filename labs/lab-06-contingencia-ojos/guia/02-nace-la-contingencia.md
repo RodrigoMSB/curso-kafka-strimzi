@@ -29,7 +29,7 @@ permisos (RBAC) que necesita para administrar allí. Ahora sí vigila el DR.
 
 Sobre una copia de `plantillas/20-kafka-dr.yaml`, completa los TODO:
 
-**ANTES**:
+**ANTES** (la plantilla trae **tres** TODO: réplicas, roles y el tipo de storage):
 
 ```yaml
 spec:
@@ -37,6 +37,13 @@ spec:
   roles:
     - # TODO B
     - # TODO B
+  ...
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: # TODO C
+        kraftMetadata: shared
 ```
 
 **DESPUÉS**:
@@ -47,9 +54,18 @@ spec:
   roles:
     - controller
     - broker
+  ...
+  storage:
+    type: jbod
+    volumes:
+      - id: 0
+        type: ephemeral
+        kraftMetadata: shared
 ```
 
-Un **único nodo dual-role** (controller + broker), storage **efímero**, RF=1.
+Un **único nodo dual-role** (controller + broker), storage **efímero**, RF=1. No
+olvides el TODO C del `storage`: sin él, el `KafkaNodePool` es inválido
+(`storage.volumes[0].type: Required value`).
 
 > **Honestidad de laboratorio:** el DR real vive en **otra región**, con varios
 > nodos y discos persistentes reales. Este es el **modelo a escala**: cabe en
