@@ -1,9 +1,9 @@
-# Clúster Kafka de pagos — ESTADO FINAL DEL LAB 04 ("la puerta segura").
-# Respecto al Lab 03:
-#   - Se AÑADEN dos listeners externos de tipo nodeport (uno SCRAM, uno mTLS).
-#   - Se ELIMINA el listener plano 9092 (la puerta vieja deja de existir).
+# Clúster Kafka de pagos — PARTE 2 del Lab 04: ESTADO FINAL, la puerta vieja
+# CERRADA. Es el resultado de la guía 05 ("cerrar la puerta vieja").
+# Respecto a la parte 1 (soluciones/parte-1-con-plano/), el único cambio es que
+# se ELIMINA el listener plano 9092: la puerta vieja deja de existir de jure.
 # Quedan: tls(9093) y scram(9094) internos, externo-scram(9095) y
-# externo-mtls(9096) externos, todos con authorization simple.
+# externo-mtls(9096) externos, todos con authorization simple. Sin listener plano.
 apiVersion: kafka.strimzi.io/v1
 kind: Kafka
 metadata:

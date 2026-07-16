@@ -42,11 +42,17 @@ Los TODO de `plantillas/20-listener-externo.yaml` (listener de aplicaciones):
 ```
 
 El segundo listener (`extmtls`, mTLS) es igual pero con `authentication.type: tls`
-y los puertos 32004–32007. Aplica el CR completo (la solución trae todo):
+y los puertos 32004–32007. Aplica el CR completo (la solución de esta parte trae
+todo):
 
 ```bash
-kubectl apply -n meridiano-pagos -f soluciones/20-kafka-puerta-segura.yaml
+kubectl apply -n meridiano-pagos -f soluciones/parte-1-con-plano/20-kafka-puerta-segura.yaml
 ```
+
+> **La puerta vieja sigue abierta.** Esta solución **conserva** el listener plano
+> 9092 heredado del Lab 03 (inservible de facto por `authorization`, pero
+> presente en el muro). Abrir las puertas nuevas no cierra la vieja: cerrarla es
+> el acto final de la guía 05.
 
 > El `port` del CR (9095, 9096) es el puerto **interno** en el que el broker
 > escucha; los **nodePorts** (32000–32007) son los puertos **externos**, los que

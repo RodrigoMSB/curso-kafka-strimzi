@@ -28,10 +28,12 @@ En tu copia del `Kafka`, borra por completo el bloque del listener `plain`:
         ...
 ```
 
-La solución final ya no lo tiene. Aplícala:
+La solución **final** ya no lo tiene. Aplícala: es el mismo clúster de la guía 02,
+ahora sin la puerta vieja (el único cambio respecto a la parte 1 es que desaparece
+el listener `plain`):
 
 ```bash
-kubectl apply -n meridiano-pagos -f soluciones/20-kafka-puerta-segura.yaml
+kubectl apply -n meridiano-pagos -f soluciones/parte-2-sin-plano/20-kafka-puerta-segura.yaml
 kubectl wait --for=condition=Ready kafka/pagos -n meridiano-pagos --timeout=600s
 ```
 

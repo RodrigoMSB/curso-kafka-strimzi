@@ -1,0 +1,93 @@
+# Clúster Kafka de pagos — PARTE 1 del Lab 04: se ABRE la puerta al exterior,
+# pero la puerta vieja (el listener plano 9092) SIGUE ABIERTA todavía.
+# Es el estado tras la guía 02 ("abrir la puerta"):
+#   - Se AÑADEN dos listeners externos de tipo nodeport (extscram SCRAM, extmtls mTLS).
+#   - Se CONSERVA el listener plano 9092 heredado del Lab 03: la puerta vieja
+#     sigue en el muro (queda inservible de facto por authorization simple, pero
+#     existe). Se elimina de jure en la guía 05 -> soluciones/parte-2-sin-plano/.
+apiVersion: kafka.strimzi.io/v1
+kind: Kafka
+metadata:
+  name: pagos
+spec:
+  kafka:
+    version: 4.2.0
+    metadataVersion: 4.2-IV1
+    rack:
+      topologyKey: topology.kubernetes.io/zone
+    listeners:
+      # --- La puerta vieja: listener plano 9092 (aún presente en la parte 1) ---
+      - name: plain
+        port: 9092
+        type: internal
+        tls: false
+      # --- Listeners internos (dentro del clúster) ---
+      - name: tls
+        port: 9093
+        type: internal
+        tls: true
+        authentication:
+          type: tls
+      - name: scram
+        port: 9094
+        type: internal
+        tls: false
+        authentication:
+          type: scram-sha-512
+      # --- Listener externo para APLICACIONES: TLS + SCRAM ---
+      - name: extscram
+        port: 9095
+        type: nodeport
+        tls: true
+        authentication:
+          type: scram-sha-512
+        configuration:
+          bootstrap:
+            nodePort: 32000
+          brokers:
+            - broker: 0
+              nodePort: 32001
+              advertisedHost: 127.0.0.1
+              advertisedPort: 32001
+            - broker: 1
+              nodePort: 32002
+              advertisedHost: 127.0.0.1
+              advertisedPort: 32002
+            - broker: 2
+              nodePort: 32003
+              advertisedHost: 127.0.0.1
+              advertisedPort: 32003
+      # --- Listener externo para SERVICIOS CRÍTICOS: mTLS ---
+      - name: extmtls
+        port: 9096
+        type: nodeport
+        tls: true
+        authentication:
+          type: tls
+        configuration:
+          bootstrap:
+            nodePort: 32004
+          brokers:
+            - broker: 0
+              nodePort: 32005
+              advertisedHost: 127.0.0.1
+              advertisedPort: 32005
+            - broker: 1
+              nodePort: 32006
+              advertisedHost: 127.0.0.1
+              advertisedPort: 32006
+            - broker: 2
+              nodePort: 32007
+              advertisedHost: 127.0.0.1
+              advertisedPort: 32007
+    authorization:
+      type: simple
+    config:
+      offsets.topic.replication.factor: 3
+      transaction.state.log.replication.factor: 3
+      transaction.state.log.min.isr: 2
+      default.replication.factor: 3
+      min.insync.replicas: 2
+  entityOperator:
+    topicOperator: {}
+    userOperator: {}

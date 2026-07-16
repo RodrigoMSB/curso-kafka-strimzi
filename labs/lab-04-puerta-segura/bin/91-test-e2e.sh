@@ -75,8 +75,8 @@ else res_f1="FALLO"; reportar_fallo 1 "bash ../../lab-03-topicos-identidad/bin/9
 
 # ===================== Fase 2: la puerta segura =====================
 echo; msg_info "===== Fase 2: la puerta segura (listeners externos + cierre del plano) ====="
-if ! correr kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL/20-kafka-puerta-segura.yaml"; then
-  res_f2="FALLO"; reportar_fallo 2 "kubectl apply -f soluciones/20-kafka-puerta-segura.yaml"
+if ! correr kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL/parte-2-sin-plano/20-kafka-puerta-segura.yaml"; then
+  res_f2="FALLO"; reportar_fallo 2 "kubectl apply -f soluciones/parte-2-sin-plano/20-kafka-puerta-segura.yaml"
   limpieza_cluster; finalizar 1 "Fase 2 (aplicar puerta segura)"
 fi
 if ! correr kubectl wait --for=condition=Ready "kafka/${CLUSTER}" -n "$NS" --context "$CONTEXTO" --timeout="$TIMEOUT_KAFKA"; then

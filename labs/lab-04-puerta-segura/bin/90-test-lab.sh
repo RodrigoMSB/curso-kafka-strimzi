@@ -48,7 +48,7 @@ if printf '%s\n' "$lst" | grep -q '^extscram:nodeport:true$' \
    && printf '%s\n' "$lst" | grep -q '^extmtls:nodeport:true$' \
    && printf '%s' "$nlisten_status" | grep -q 'extscram'; then r=0; else r=1; fi
 verificar "Listeners externos extscram y extmtls (nodeport+TLS) con direcciones publicadas" "$r" \
-  "Aplica soluciones/20-kafka-puerta-segura.yaml (guía 02)."
+  "Aplica soluciones/parte-1-con-plano/ (guía 02) y luego parte-2-sin-plano/ (guía 05)."
 
 # 3. Listener plano 9092 AUSENTE del CR (la puerta vieja no existe).
 if printf '%s\n' "$lst" | grep -qi 'plain'; then r=1; else r=0; fi

@@ -30,7 +30,7 @@ msg_ok "Estado del Lab 03 reconstruido."
 
 # 2. Aplicar el CR de la puerta segura (añade listeners externos, quita el plano).
 msg_info "Aplicando la puerta segura (listeners externos + cierre del plano)..."
-kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL/20-kafka-puerta-segura.yaml"
+kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL/parte-2-sin-plano/20-kafka-puerta-segura.yaml"
 msg_info "Esperando a que el clúster vuelva a Ready tras el rolling (máximo ${TIMEOUT_KAFKA})..."
 if ! kubectl wait --for=condition=Ready "kafka/${CLUSTER}" -n "$NS" --context "$CONTEXTO" --timeout="$TIMEOUT_KAFKA"; then
   msg_error "El clúster no volvió a Ready. Revisa 'kubectl get pods -n ${NS}'."
