@@ -12,7 +12,7 @@ frenarlo:
 kubectl exec -i cliente-kafka -n meridiano-pagos -- bash -c \
   'echo "intento-no-autorizado" | bin/kafka-console-producer.sh \
    --bootstrap-server pagos-kafka-bootstrap:9093 \
-   --producer.config /props/motor-fraude.properties \
+   --command-config /props/motor-fraude.properties \
    --topic pagos.meridiano.transacciones'
 ```
 
@@ -31,7 +31,7 @@ válida (el certificado es bueno), pero el permiso no existe.
 ```bash
 kubectl exec cliente-kafka -n meridiano-pagos -- bin/kafka-console-consumer.sh \
   --bootstrap-server pagos-kafka-bootstrap:9094 \
-  --consumer.config /props/app-pagos.properties \
+  --command-config /props/app-pagos.properties \
   --topic pagos.meridiano.transacciones --group intento \
   --from-beginning --timeout-ms 10000
 ```
@@ -63,7 +63,7 @@ kubectl exec cliente-kafka -n meridiano-pagos -- bash -c \
   'for i in $(seq 1 20000); do echo "relleno-de-cuota-mensaje-numero-$i"; done | \
    bin/kafka-console-producer.sh \
    --bootstrap-server pagos-kafka-bootstrap:9094 \
-   --producer.config /props/app-pagos.properties \
+   --command-config /props/app-pagos.properties \
    --topic pagos.meridiano.transacciones'
 ```
 

@@ -12,7 +12,7 @@ Cap 3 siguen mandando — usamos el pod cliente del Lab 03):
 kubectl exec -i cliente-kafka -n meridiano-pagos -- bash -c \
   'echo "{\"id\":\"TX-DR-0001\",\"via\":\"simulacro\"}" | bin/kafka-console-producer.sh \
    --bootstrap-server pagos-kafka-bootstrap:9094 \
-   --producer.config /props/app-pagos.properties \
+   --command-config /props/app-pagos.properties \
    --topic pagos.meridiano.transacciones'
 ```
 
