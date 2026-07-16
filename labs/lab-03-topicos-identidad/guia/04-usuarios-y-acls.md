@@ -18,7 +18,12 @@ su trabajo, y nada más?* Eso es **mínimo privilegio**.
 
 ## Completa el KafkaUser de app-pagos
 
-Sobre una copia de `plantillas/30-kafkauser-app-pagos.yaml`:
+Copia la plantilla a **tu** archivo de trabajo y complétala (no edites la
+plantilla):
+
+```bash
+cp plantillas/30-kafkauser-app-pagos.yaml mi-app-pagos.yaml
+```
 
 **ANTES**:
 
@@ -57,11 +62,18 @@ spec:
         host: "*"
 ```
 
-Aplica ambos usuarios (la solución trae los dos completos):
+Aplica **tu** manifiesto de `app-pagos`. El segundo usuario, `motor-fraude`, no
+tiene plantilla —es una identidad de referencia con certificado de cliente—, así
+que ese lo tomas de las soluciones:
 
 ```bash
-kubectl apply -n meridiano-pagos -f soluciones/users/
+kubectl apply -n meridiano-pagos -f mi-app-pagos.yaml
+kubectl apply -n meridiano-pagos -f soluciones/users/31-motor-fraude.yaml
 ```
+
+> Si tu `app-pagos` queda `NotReady`, compáralo con la referencia
+> `soluciones/users/30-app-pagos.yaml` (compara, no copies) y corrige tu copia.
+> Las `soluciones/` son la referencia; el camino es **tu** manifiesto.
 
 ```bash
 kubectl get kafkausers -n meridiano-pagos
@@ -117,7 +129,7 @@ Esto deja un pod `cliente-kafka` con dos perfiles montados en `/props`:
 kubectl exec -i cliente-kafka -n meridiano-pagos -- bash -c \
   'echo "{\"id\":\"TX-0002\",\"via\":\"autenticada\"}" | bin/kafka-console-producer.sh \
    --bootstrap-server pagos-kafka-bootstrap:9094 \
-   --producer.config /props/app-pagos.properties \
+   --command-config /props/app-pagos.properties \
    --topic pagos.meridiano.transacciones'
 ```
 
@@ -126,7 +138,7 @@ kubectl exec -i cliente-kafka -n meridiano-pagos -- bash -c \
 ```bash
 kubectl exec cliente-kafka -n meridiano-pagos -- bin/kafka-console-consumer.sh \
   --bootstrap-server pagos-kafka-bootstrap:9093 \
-  --consumer.config /props/motor-fraude.properties \
+  --command-config /props/motor-fraude.properties \
   --topic pagos.meridiano.transacciones --group fraude.deteccion \
   --from-beginning --timeout-ms 15000
 ```
