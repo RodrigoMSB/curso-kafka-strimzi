@@ -119,6 +119,10 @@
 
 **S72 — Lanzamiento Lab 04: "La puerta segura"**
 - Contenido: Objetivos: (1) declarar DOS listeners externos `nodeport` con TLS — uno con autenticación SCRAM-SHA-512 (para aplicaciones) y otro con mTLS (para servicios críticos), porque un listener admite un solo mecanismo de autenticación, (2) extraer la cluster CA y conectarse desde fuera del clúster con kcat como `app-pagos` por el listener SCRAM, (3) verificar mTLS con `motor-fraude` por el listener mTLS, (4) revisar el manifiesto de referencia `loadbalancer`/NLB para EKS, (5) cerrar la puerta vieja: eliminar el listener plano y verificar que ahora falla por conexión, no por autorización. Desafío extra: inspeccionar el certificado del broker con openssl y leer su cadena. Tiempo: 40 min.
+
+**S73 — Anexo del Lab 04: la puerta HTTP (Kafka Bridge)**
+- Contenido: No todo cliente habla el protocolo Kafka. Un sistema legado que solo sabe HTTP —un ERP, un webhook de un tercero, un motor de reglas— no puede hacer el handshake de SCRAM ni presentar un certificado de cliente. El **Kafka Bridge** es el traductor: habla **HTTP hacia afuera** y **Kafka autenticado hacia adentro** (SCRAM contra el listener interno seguro 9094), con su **propia identidad** y ACLs de **mínimo privilegio** sobre su **propio tópico** (nunca toca `pagos.meridiano.transacciones`). No es un agujero en el muro: es una puerta con su propio guardia. El alumno produce con un simple `curl` (`POST /topics/...`) y ve el mensaje **salir por Kafka** con un consumidor normal; y consume por HTTP (crear consumidor → suscribir → poll). **Entró por HTTP, salió por Kafka**: esa es la traducción.
+- Nota: Cierra el **objetivo 5 de la Ley** (operar Kafka Bridge), que hasta ahora el temario solo nombraba. Va como **anexo del Lab 04 (guía 06)**, no como lab nuevo: el Lab 04 trata de puertas y esta es la puerta HTTP. Es **aditivo** — no toca las guías 01–05 ya certificadas. ~15 min de alumno, dentro del holgado presupuesto del Lab 04 (50′ asignados vs. ~15′ reales del lab base). Honestidad de alcance: internamente el bridge va por SCRAM sobre 9094 (sin TLS, el mismo atajo declarado del curso); en producción bancaria sería SASL_SSL.
 - Nota: Cierre del capítulo con el mapa maestro: la plataforma de pagos ahora exige identidad, otorga mínimo privilegio y cifra de extremo a extremo — "esto ya se parece a un sistema que un auditor firma". Anticipo Cap 4: el core legado del banco entra al río de eventos vía CDC.
 
 ---
@@ -129,7 +133,7 @@
 |---|---|---|---|
 | 6 | S52–S58 (7) | Lab 03 p1 — Tópicos como código | Triángulo Git/Operator/clúster (S55) |
 | 7 | S59–S65 (7) | Lab 03 p2 — Identidad y mínimo privilegio | Matriz de ACLs (S63) |
-| 8 | S66–S72 (7) | Lab 04 — La puerta segura | Árboles de confianza de las CAs (S70) |
+| 8 | S66–S73 (8) | Lab 04 — La puerta segura (+ anexo Bridge) | Árboles de confianza de las CAs (S70) |
 
 **Total Cap 3: 21 slides.** Acumulado curso: 72 (S1–S72). Proyección final ~95–100: dentro del rango estimado.
 
