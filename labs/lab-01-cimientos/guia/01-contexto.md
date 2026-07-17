@@ -45,13 +45,15 @@ no es casualidad, es diseño.
 ## Prerrequisito de hardware (no negociable)
 
 Todo el curso corre en local sobre Docker + kind, en un **único clúster que crece
-lab a lab**. El pico es el Lab 06 (dos clústeres Kafka + MM2 + Connect + PostgreSQL
-+ Prometheus + Grafana, ≈ 6,25 GiB). Por eso:
+lab a lab**. El pico es el **Lab 07** durante el rebalanceo (dos clústeres Kafka
+con un 4º broker temporal + Cruise Control + MM2 + Connect + puente HTTP +
+PostgreSQL + Prometheus + Grafana, ≈ 7,5 GiB; el Lab 06 pesa ≈ 6,25 GiB). Por eso:
 
-- **Mínimo 16 GB de RAM** en la máquina **y Docker Desktop con ≥ 8 GB** asignados
-  (recomendado 10). Se ajusta en *Docker Desktop → Settings → Resources → Memory*.
-- **Con 8 GB de RAM el curso no corre** (el Lab 06 no levanta). El verificador de
-  abajo te avisa si Docker tiene menos de 8 GB.
+- **Mínimo 16 GB de RAM** en la máquina **y Docker Desktop con ≥ 10 GB** asignados.
+  Se ajusta en *Docker Desktop → Settings → Resources → Memory*.
+- **Con Docker en 8 GB el Lab 07 queda al borde** (pods `Pending`/`OOMKilled` en el
+  rebalanceo); 8 GB alcanza para los labs 01–06. El verificador de abajo te avisa
+  si Docker tiene menos de 10 GB.
 
 ## Antes de continuar: verifica tu entorno
 

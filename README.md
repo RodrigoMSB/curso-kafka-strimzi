@@ -5,20 +5,26 @@ Curso de 14 horas sobre Strimzi 0.51, Kafka en modo KRaft (versión según matri
 ## Prerrequisitos de hardware (prerequisito duro — léelo antes de la sala)
 
 Todo el curso corre en local sobre Docker + kind. El clúster es único y **crece
-lab a lab**; el pico está en el **Lab 06**, donde conviven **dos** clústeres Kafka
-(`pagos` + `dr`) más MirrorMaker 2, Kafka Connect, PostgreSQL, Prometheus y
-Grafana. Medido en el pico: **≈ 6,25 GiB** de memoria real de contenedores.
+lab a lab**; el pico está en el **Lab 07**, durante el rebalanceo: conviven **dos**
+clústeres Kafka (`pagos` con un 4º broker temporal + `dr`), **Cruise Control**,
+MirrorMaker 2, Kafka Connect, el puente HTTP, PostgreSQL, Prometheus y Grafana.
+Medido: el Lab 06 pesa ≈ 6,25 GiB, y el Lab 07 le suma Cruise Control (~0,4 GiB) y
+el 4º broker del rebalanceo (~0,6 GiB), llevando el pico a **≈ 7,5 GiB** de memoria
+real de contenedores.
 
 - **Mínimo: 16 GB de RAM** en la máquina **y Docker Desktop configurado con
-  ≥ 8 GB** de memoria (recomendado 10 GB). En Docker Desktop se ajusta en
-  *Settings → Resources → Memory*.
-- **8 GB de RAM no alcanza:** el Lab 06 no levanta (pods `Pending`/`OOMKilled`).
+  ≥ 10 GB** de memoria. En Docker Desktop se ajusta en *Settings → Resources →
+  Memory*.
+- **Con Docker en 8 GB el Lab 07 queda al borde:** el rebalanceo (4 brokers +
+  Cruise Control) puede dejar pods en `Pending`/`OOMKilled`. 8 GB es el suelo
+  absoluto (alcanza para los labs 01–06); para el Lab 07 completo hacen falta
+  **10 GB**.
 - Cierra aplicaciones pesadas del host (navegadores con muchas pestañas, otros
   IDEs) durante los labs pesados: la RAM que se lleve el host se la quita a Docker.
 
 > Si tu laptop tiene 16 GB pero Docker Desktop está en su asignación por defecto
-> (a menudo menos de 8 GB), **súbela antes de empezar**. El verificador del Lab 01
-> (`bin/00-verificar-entorno.sh`) te avisa si Docker tiene menos de 8 GB.
+> (a menudo menos de 8 GB), **súbela a 10 GB antes de empezar**. El verificador del
+> Lab 01 (`bin/00-verificar-entorno.sh`) te avisa si Docker tiene menos de 10 GB.
 
 ## Estructura de carpetas
 

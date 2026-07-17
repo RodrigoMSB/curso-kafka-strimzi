@@ -19,21 +19,22 @@ else
   errores=$((errores + 1))
 fi
 
-# 1b. Memoria asignada a Docker. El curso necesita >= 8 GiB para el pico del
-# Lab 06 (dos clústeres Kafka + MM2 + Connect + PostgreSQL + Prometheus + Grafana,
-# ~6.25 GiB). Es un aviso [INFO], no un [ERROR]: no suma al contador ni bloquea —
-# mismo criterio que el aviso de skew. Con 8 GB de RAM de host, el Lab 06 no cabe.
+# 1b. Memoria asignada a Docker. El pico del curso es el Lab 07 durante el
+# rebalanceo (dos clústeres Kafka con un 4º broker temporal + Cruise Control + MM2
+# + Connect + puente HTTP + PostgreSQL + Prometheus + Grafana, ~7.5 GiB; el Lab 06
+# pesa ~6.25 GiB). Se recomiendan >= 10 GiB con holgura. Es un aviso [INFO], no un
+# [ERROR]: no suma al contador ni bloquea — mismo criterio que el aviso de skew.
 mem_bytes=$(docker info --format '{{.MemTotal}}' 2>/dev/null || true)
 case "$mem_bytes" in
   ''|*[!0-9]*) : ;;   # no disponible o no numérico: no avisamos
   *)
-    umbral=$((8 * 1024 * 1024 * 1024))          # 8 GiB en bytes
+    umbral=$((10 * 1024 * 1024 * 1024))         # 10 GiB en bytes (recomendado)
     mem_gib=$((mem_bytes / 1024 / 1024 / 1024))
     if [ "$mem_bytes" -lt "$umbral" ]; then
-      msg_info "Docker tiene ~${mem_gib} GiB asignados; el curso necesita >= 8 GiB para el pico del Lab 06."
-      msg_info "Súbelo en Docker Desktop → Settings → Resources → Memory (recomendado 10 GiB); con menos, el Lab 06 puede dejar pods en Pending/OOMKilled."
+      msg_info "Docker tiene ~${mem_gib} GiB asignados; el pico del curso (Lab 07, rebalanceo con 4 brokers + Cruise Control) es ~7.5 GiB y se recomiendan >= 10 GiB."
+      msg_info "Súbelo en Docker Desktop → Settings → Resources → Memory. 8 GiB es el suelo (labs 01-06); con menos de 10 el Lab 07 puede dejar pods en Pending/OOMKilled."
     else
-      msg_ok "Memoria de Docker suficiente (~${mem_gib} GiB, mínimo 8 GiB)."
+      msg_ok "Memoria de Docker suficiente (~${mem_gib} GiB, recomendado >= 10 GiB)."
     fi
     ;;
 esac
