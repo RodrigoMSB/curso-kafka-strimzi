@@ -34,6 +34,7 @@ Un bloque de 40 minutos (guías 1–5).
 | 3 | `guia/03-kcat-desde-fuera.md` | Produces el primer mensaje desde fuera con kcat (SCRAM). |
 | 4 | `guia/04-mtls-y-referencia-eks.md` | Consumes por mTLS y lees la referencia de EKS (NLB). |
 | 5 | `guia/05-cerrar-la-puerta-vieja.md` | Eliminas el listener plano y distingues conexión vs autorización. |
+| 6 | `guia/06-la-puerta-http.md` | **Anexo:** despliegas el Kafka Bridge y le das entrada al cliente que solo habla HTTP, sin abrir un agujero. |
 
 ## Verifica tu trabajo
 

@@ -37,6 +37,14 @@ if ! kubectl wait --for=condition=Ready "kafka/${CLUSTER}" -n "$NS" --context "$
   exit 1
 fi
 
+# 2b. Desplegar el puente HTTP (Kafka Bridge, guía 06 — anexo del Lab 04).
+msg_info "Desplegando el puente HTTP (Kafka Bridge)..."
+kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL/30-bridge.yaml"
+if ! kubectl wait --for=condition=Ready kafkabridge/puente-http -n "$NS" --context "$CONTEXTO" --timeout=300s; then
+  msg_error "El Kafka Bridge no llegó a Ready. Revisa 'kubectl get kafkabridge -n ${NS}'."
+  exit 1
+fi
+
 # 3. Extraer credenciales para el acceso externo.
 bash "$DIR_SCRIPT/01-extraer-credenciales.sh"
 

@@ -87,7 +87,16 @@ if ! correr bash "$DIR_SCRIPT/01-extraer-credenciales.sh"; then
   res_f2="FALLO"; reportar_fallo 2 "bash bin/01-extraer-credenciales.sh"
   limpieza_cluster; finalizar 1 "Fase 2 (extraer credenciales)"
 fi
-res_f2="OK"; msg_ok "Puerta segura aplicada y credenciales extraídas."
+# Puente HTTP (Kafka Bridge, guía 06 — anexo del Lab 04).
+if ! correr kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL/30-bridge.yaml"; then
+  res_f2="FALLO"; reportar_fallo 2 "kubectl apply -f soluciones/30-bridge.yaml"
+  limpieza_cluster; finalizar 1 "Fase 2 (aplicar Kafka Bridge)"
+fi
+if ! correr kubectl wait --for=condition=Ready kafkabridge/puente-http -n "$NS" --context "$CONTEXTO" --timeout=300s; then
+  res_f2="FALLO"; reportar_fallo 2 "kubectl wait kafkabridge/puente-http"
+  limpieza_cluster; finalizar 1 "Fase 2 (Kafka Bridge no Ready)"
+fi
+res_f2="OK"; msg_ok "Puerta segura + puente HTTP aplicados y credenciales extraídas."
 
 # ===================== Fase 3: verificación (incluye kcat desde el host) =====================
 echo; msg_info "===== Fase 3: verificación (test 90, kcat desde el host) ====="

@@ -92,6 +92,37 @@ if printf '%s' "$salida9092" | grep -qiE "Request METADATA failed|Connection ref
 verificar "El puerto plano 9092 rechaza la conexión (no es un fallo de autorización)" "$r" \
   "Si responde o falla por autorización, el listener plano sigue presente: elimínalo del CR (guía 05)."
 
+# 7. Kafka Bridge (la puerta HTTP, guía 06) en estado Ready.
+br_ready=$(kubectl get kafkabridge puente-http -n "$NS" --context "$CONTEXTO" \
+  -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)
+if [ "$br_ready" = "True" ]; then r=0; else r=1; fi
+verificar "Kafka Bridge 'puente-http' en estado Ready" "$r" \
+  "Aplica tu mi-bridge.yaml o soluciones/30-bridge.yaml (guía 06)."
+
+# 8. Round-trip del puente: producir por HTTP (curl al bridge) y consumirlo por
+#    Kafka en la partición:offset exacta que devuelve el bridge (robusto frente al
+#    backlog del tópico). Prueba el TRADUCTOR, no que el pod esté vivo.
+BRMARCA="bridge-90-$(date +%s)-$$"
+resp=$(kubectl run "cli-brhttp-$$" --rm -i --restart=Never -n "$NS" --context "$CONTEXTO" \
+  --image=curlimages/curl:latest --command -- \
+  curl -s -X POST http://puente-http-bridge-service:8080/topics/pagos.meridiano.http \
+  -H 'Content-Type: application/vnd.kafka.json.v2+json' \
+  -d "{\"records\":[{\"value\":{\"marca\":\"${BRMARCA}\"}}]}" 2>/dev/null || true)
+brpart=$(printf '%s' "$resp" | grep -oE '"partition":[0-9]+' | grep -oE '[0-9]+' | head -1)
+broff=$(printf '%s' "$resp" | grep -oE '"offset":[0-9]+' | grep -oE '[0-9]+' | head -1)
+brpw=$(kubectl get secret bridge-http -n "$NS" --context "$CONTEXTO" -o jsonpath='{.data.password}' 2>/dev/null | openssl base64 -d -A 2>/dev/null || true)
+brmsg=""
+if [ -n "$brpart" ] && [ -n "$broff" ] && [ -n "$brpw" ]; then
+  brmsg=$(kubectl run "cli-brk-$$" --rm -i --restart=Never -n "$NS" --context "$CONTEXTO" \
+    --image="$IMG" --command -- bash -c "
+      printf 'security.protocol=SASL_PLAINTEXT\nsasl.mechanism=SCRAM-SHA-512\nsasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"bridge-http\" password=\"${brpw}\";\n' > /tmp/c.properties
+      bin/kafka-console-consumer.sh --bootstrap-server pagos-kafka-bootstrap:9094 --consumer.config /tmp/c.properties \
+        --topic pagos.meridiano.http --partition ${brpart} --offset ${broff} --max-messages 1 --timeout-ms 20000" 2>/dev/null || true)
+fi
+if printf '%s' "$brmsg" | grep -q "$BRMARCA"; then r=0; else r=1; fi
+verificar "Round-trip del puente: producido por HTTP y consumido por Kafka" "$r" \
+  "Revisa el Bridge Ready, las ACLs de bridge-http y el tópico pagos.meridiano.http (guía 06)."
+
 echo
 if [ "$aprobadas" -eq "$total" ]; then
   msg_ok "${aprobadas}/${total} verificaciones correctas"

@@ -1,0 +1,78 @@
+# Plantilla — el puente HTTP (Kafka Bridge). Trabaja sobre una COPIA
+# (p. ej. mi-bridge.yaml) y completa los TODO. Compara con soluciones/30-bridge.yaml
+# solo si te atascas.
+#
+# Tres piezas: un tópico dedicado para el cliente HTTP, la identidad del puente
+# (KafkaUser) y el KafkaBridge.
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: pagos.meridiano.http
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    min.insync.replicas: "2"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: bridge-http
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      - resource:
+          type: topic
+          name: pagos.meridiano.http
+          patternType: literal
+        operations:
+          # TODO A: operaciones de MÍNIMO PRIVILEGIO para un puente que PRODUCE y
+          # CONSUME su tópico (y nada más). Pista: Describe, Read, Write.
+          - # TODO
+        host: "*"
+      - resource:
+          type: group
+          name: puente-http
+          patternType: prefix
+        operations:
+          - Read
+          - Describe
+        host: "*"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaBridge
+metadata:
+  name: puente-http
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  replicas: 1
+  # TODO B: el bootstrap del listener interno SEGURO (SCRAM), NO el plano. Pista:
+  # el puente se autentica por SCRAM en el puerto 9094 -> pagos-kafka-bootstrap:9094
+  bootstrapServers: # TODO
+  authentication:
+    type: scram-sha-512
+    username: bridge-http
+    passwordSecret:
+      secretName: bridge-http
+      password: password
+  http:
+    port: 8080
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 384Mi
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m

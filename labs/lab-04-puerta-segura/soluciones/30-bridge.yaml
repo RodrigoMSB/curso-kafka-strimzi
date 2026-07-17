@@ -1,0 +1,80 @@
+# Puente HTTP (Kafka Bridge) del Lab 04 — SOLUCIÓN de referencia.
+# Tres piezas: un tópico DEDICADO para el cliente HTTP (mínimo privilegio: el
+# puente no toca el tópico sensible de transacciones), la identidad del puente
+# (KafkaUser con ACLs solo sobre ese tópico) y el KafkaBridge, que habla HTTP
+# hacia afuera y Kafka autenticado (SCRAM, listener interno 9094) hacia adentro.
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaTopic
+metadata:
+  name: pagos.meridiano.http
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  partitions: 3
+  replicas: 3
+  config:
+    min.insync.replicas: "2"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaUser
+metadata:
+  name: bridge-http
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  authentication:
+    type: scram-sha-512
+  authorization:
+    type: simple
+    acls:
+      # El puente produce Y consume SOLO su tópico: Describe + Read + Write. Nada
+      # sobre pagos.meridiano.transacciones — mínimo privilegio, el hilo del Lab 04.
+      - resource:
+          type: topic
+          name: pagos.meridiano.http
+          patternType: literal
+        operations:
+          - Describe
+          - Read
+          - Write
+        host: "*"
+      # Su grupo de consumidores HTTP (prefijo 'puente-http').
+      - resource:
+          type: group
+          name: puente-http
+          patternType: prefix
+        operations:
+          - Read
+          - Describe
+        host: "*"
+---
+apiVersion: kafka.strimzi.io/v1
+kind: KafkaBridge
+metadata:
+  name: puente-http
+  labels:
+    strimzi.io/cluster: pagos
+spec:
+  replicas: 1
+  # Bootstrap del listener interno SEGURO (SCRAM, 9094) — no el plano.
+  bootstrapServers: pagos-kafka-bootstrap:9094
+  authentication:
+    type: scram-sha-512
+    username: bridge-http
+    passwordSecret:
+      secretName: bridge-http
+      password: password
+  http:
+    port: 8080
+  # Un JVM más: lo mantenemos pequeño para no inflar el pico del Lab 06.
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: "1"
+      memory: 384Mi
+  jvmOptions:
+    -Xms: 256m
+    -Xmx: 256m
