@@ -82,7 +82,7 @@
 - Diagrama: Un CRD con dos etiquetas de "servido" (v1beta2 ✓, v1 ✓) pero una sola de "almacenado" (v1beta2 ✓ → v1 ✗); flecha de migración que mueve el "almacenado" a v1 y apaga v1beta2, habilitando el salto a 1.0.0.
 
 **S105 — El upgrade en la práctica: ensayar en el DR**
-- Contenido: El ejercicio aplica la regla: se ensaya el upgrade 4.1.1 → 4.2.0 sobre el clúster de **contingencia** (`dr`), no sobre `pagos`. Como el DR es efímero y MM2 lo repuebla solo, recrearlo o experimentarlo es barato — eso ES una ventaja de la contingencia bien diseñada. Se verifica que MM2 siguió replicando tras el upgrade.
+- Contenido: El ejercicio aplica la regla: se ensaya el upgrade 4.1.1 → 4.2.0 sobre el clúster de **contingencia** (`dr`), no sobre `pagos`. Y trae la mejor lección de contingencia del curso: **MM2 guarda su estado —configs, offsets, status— en tópicos internos que viven DENTRO del DR**, así que recrear el DR (efímero, un solo nodo) o hacerle rolling lo deja huérfano y la réplica se **detiene** (el `MirrorSourceConnector` pierde su task). El procedimiento honesto: **parar MM2 antes de tocar el DR y recrearlo al final**, cuando el DR ya está en su versión definitiva. Se verifica que la réplica queda **restaurada** tras recrear MM2 — no que "sobrevivió sola".
 - Nota: Doble lección: se aprende el upgrade Y se refuerza por qué tener un DR desechable es valioso (es tu campo de pruebas además de tu seguro). El procedimiento para el primario es idéntico — solo cambia la ventana de cambio y la cantidad de café.
 
 **S106 — Drain Cleaner: sobrevivir al mantenimiento de la infraestructura**
@@ -91,7 +91,7 @@
 - Diagrama: Kubernetes intentando evictar 2 brokers a la vez (✗) vs Drain Cleaner + operador rodándolos de a uno respetando ISR (✓).
 
 **S107 — Lanzamiento Lab 07 (parte 2): "Cambiar sin downtime"**
-- Contenido: Objetivos: (1) ejecutar un rolling manual sobre el clúster `dr` y observarlo, (2) recrear el `dr` en Kafka 4.1.1 y ejecutar el upgrade declarativo a 4.2.0 (version → metadataVersion), (3) verificar que MM2 siguió replicando durante y después del upgrade, (4) estudiar Drain Cleaner (instalación de referencia + explicación EKS). Desafío extra: forzar la renovación de certificados con `strimzi.io/force-renew` y observar que también es... un rolling. Tiempo: 40 min.
+- Contenido: Objetivos: (1) ejecutar un rolling manual sobre el clúster `dr` y observarlo, (2) parar MM2, recrear el `dr` en Kafka 4.1.1 y ejecutar el upgrade declarativo a 4.2.0 (version → metadataVersion), (3) recrear MM2 al final y verificar que la réplica quedó **restaurada** (recrear el DR efímero mató su estado; hay que traer MM2 de vuelta), (4) estudiar Drain Cleaner (instalación de referencia + explicación EKS). Desafío extra: forzar la renovación de certificados con `strimzi.io/force-renew` y observar que también es... un rolling. Tiempo: 40 min.
 - Nota: El cierre conceptual del capítulo técnico: "TODO en esta plataforma —crecer, cambiar config, renovar certificados, actualizar versión— termina siendo un rolling update bien hecho. Dominar el rolling es dominar la operación de Strimzi". El mapa maestro queda con todo el Cap 5 técnico iluminado; solo falta la coronación: la migración.
 
 ---
