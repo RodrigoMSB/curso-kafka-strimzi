@@ -1,5 +1,12 @@
 #!/usr/bin/env bash
 # Funciones comunes del Capstone "La migración" de Banco Meridiano.
+
+# Git Bash (MSYS2) reescribe los argumentos que parecen rutas Unix a rutas Windows
+# antes de pasarlos al comando. Eso rompe cualquier '--command-config /props/...' que
+# viaje como argumento directo de 'kubectl exec'. Desactivarlo es inocuo en macOS y
+# Linux (la variable simplemente no se usa).
+export MSYS_NO_PATHCONV=1
+
 msg_ok()    { printf '[OK] %s\n' "$*"; }
 msg_info()  { printf '[INFO] %s\n' "$*"; }
 msg_error() { printf '[ERROR] %s\n' "$*" >&2; }
@@ -65,7 +72,7 @@ volcar_destino() {
       printf 'security.protocol=SASL_PLAINTEXT\nsasl.mechanism=SCRAM-SHA-512\nsasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"${vd_user}\" password=\"${vd_pw}\";\n' > /tmp/c.properties
       OFFS=\$(/opt/kafka/bin/kafka-get-offsets.sh --bootstrap-server pagos-kafka-bootstrap:9094 --command-config /tmp/c.properties --topic ${vd_topic} --time -1)
       echo \"\$OFFS\" | while IFS=: read t p o; do
-        [ \"\$o\" -gt 0 ] && /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server pagos-kafka-bootstrap:9094 --consumer.config /tmp/c.properties --topic ${vd_topic} --partition \"\$p\" --offset earliest --max-messages \"\$o\" --timeout-ms 60000 2>/dev/null
+        [ \"\$o\" -gt 0 ] && /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server pagos-kafka-bootstrap:9094 --command-config /tmp/c.properties --topic ${vd_topic} --partition \"\$p\" --offset earliest --max-messages \"\$o\" --timeout-ms 60000 2>/dev/null
       done
     " 2>/dev/null
 }

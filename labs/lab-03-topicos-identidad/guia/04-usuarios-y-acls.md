@@ -136,11 +136,12 @@ kubectl exec -i cliente-kafka -n meridiano-pagos -- bash -c \
 ## Consume autenticado como motor-fraude
 
 ```bash
-kubectl exec cliente-kafka -n meridiano-pagos -- bin/kafka-console-consumer.sh \
-  --bootstrap-server pagos-kafka-bootstrap:9093 \
-  --command-config /props/motor-fraude.properties \
-  --topic pagos.meridiano.transacciones --group fraude.deteccion \
-  --from-beginning --timeout-ms 15000
+kubectl exec cliente-kafka -n meridiano-pagos -- bash -c \
+  'bin/kafka-console-consumer.sh \
+   --bootstrap-server pagos-kafka-bootstrap:9093 \
+   --command-config /props/motor-fraude.properties \
+   --topic pagos.meridiano.transacciones --group fraude.deteccion \
+   --from-beginning --timeout-ms 15000'
 ```
 
 Verás el mensaje que produjo `app-pagos`. Dos identidades distintas, dos

@@ -4,6 +4,12 @@
 set -euo pipefail
 
 DIR_SCRIPT="$(cd "$(dirname "$0")" && pwd)"
+
+# Se captura ANTES de cargar lib-comunes.sh, porque esa librería exporta
+# MSYS_NO_PATHCONV=1 para blindar los scripts. Sin esta foto previa, el aviso 2c
+# nunca podría distinguir si el alumno ya la tenía puesta en SU terminal.
+msys_previo="${MSYS_NO_PATHCONV:-}"
+
 . "$DIR_SCRIPT/lib-comunes.sh"
 
 msg_info "Verificación del entorno para el Lab 01 (no se instala nada)."
@@ -121,6 +127,24 @@ if [ -n "$cli_raw" ] && [ -n "$srv_raw" ]; then
     fi
   fi
 fi
+
+# 2c. Git Bash (MSYS2) y la conversión de rutas. MSYS reescribe los argumentos que
+# parecen rutas Unix ('/props/...') a rutas de Windows antes de entregárselos al
+# comando, lo que rompe los 'kubectl exec ... --command-config /props/...' de las
+# guías. Los scripts del curso se blindan solos (lib-comunes.sh exporta la
+# variable), pero los comandos que el alumno teclea en SU terminal no. Es un aviso
+# [INFO], no un [ERROR]: no suma al contador ni bloquea — mismo criterio que 1b/2b.
+case "$(uname -s 2>/dev/null || true)" in
+  MINGW*|MSYS*)
+    if [ -z "$msys_previo" ]; then
+      msg_info "Git Bash detectado y MSYS_NO_PATHCONV no está definida en esta terminal."
+      msg_info "Ejecuta 'export MSYS_NO_PATHCONV=1' una vez por terminal: sin ella, Git Bash convierte rutas como /props/... a rutas de Windows y los comandos de las guías fallan con 'NoSuchFileException: C:/Program Files/Git/props/...'."
+      msg_info "Los scripts del curso ya se blindan solos; el aviso es para los comandos que teclees a mano."
+    else
+      msg_ok "Git Bash detectado con MSYS_NO_PATHCONV ya definida en la terminal."
+    fi
+    ;;
+esac
 
 # 3. Conectividad básica: resolución de strimzi.io.
 if verificar_comando nslookup && nslookup strimzi.io >/dev/null 2>&1; then

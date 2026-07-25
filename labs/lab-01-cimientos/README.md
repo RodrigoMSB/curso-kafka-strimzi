@@ -23,6 +23,11 @@ Todavía no le encargaremos nada: eso es el Lab 02.
 - `kind` **v0.32.0 o superior**, `kubectl` y `helm` instalados (ver el documento de setup del curso). La versión de kind importa: v0.32.0 es la que publica el digest pineado de `kindest/node:v1.34.8` que usa el curso.
 - Conexión a Internet (descarga de la imagen del nodo y del chart del operador).
 
+> **Si trabajas en Windows con Git Bash:** ejecuta una vez por terminal
+> `export MSYS_NO_PATHCONV=1`. Git Bash reescribe las rutas tipo `/props/...` a rutas de
+> Windows y eso rompe los comandos que las pasan a un contenedor. En macOS y Linux no hace
+> falta (la variable es inocua).
+
 ## Tiempo estimado
 
 40 minutos.

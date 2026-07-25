@@ -116,7 +116,7 @@ if [ -n "$brpart" ] && [ -n "$broff" ] && [ -n "$brpw" ]; then
   brmsg=$(kubectl run "cli-brk-$$" --rm -i --restart=Never -n "$NS" --context "$CONTEXTO" \
     --image="$IMG" --command -- bash -c "
       printf 'security.protocol=SASL_PLAINTEXT\nsasl.mechanism=SCRAM-SHA-512\nsasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"bridge-http\" password=\"${brpw}\";\n' > /tmp/c.properties
-      bin/kafka-console-consumer.sh --bootstrap-server pagos-kafka-bootstrap:9094 --consumer.config /tmp/c.properties \
+      bin/kafka-console-consumer.sh --bootstrap-server pagos-kafka-bootstrap:9094 --command-config /tmp/c.properties \
         --topic pagos.meridiano.http --partition ${brpart} --offset ${broff} --max-messages 1 --timeout-ms 20000" 2>/dev/null || true)
 fi
 if printf '%s' "$brmsg" | grep -q "$BRMARCA"; then r=0; else r=1; fi

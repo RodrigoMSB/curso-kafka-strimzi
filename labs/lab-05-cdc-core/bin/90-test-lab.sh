@@ -59,7 +59,7 @@ evento=$(kubectl run "cdc-cons-$$" --rm -i --restart=Never -n "$NSP" --context "
   --image="$IMG" --command -- bash -c "
     printf 'security.protocol=SASL_PLAINTEXT\nsasl.mechanism=SCRAM-SHA-512\nsasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"cdc-reader\" password=\"${PW_CDC}\";\n' > /tmp/c.properties
     bin/kafka-console-consumer.sh --bootstrap-server pagos-kafka-bootstrap:9094 \
-      --consumer.config /tmp/c.properties --topic core.public.clientes \
+      --command-config /tmp/c.properties --topic core.public.clientes \
       --group cdc-reader-g --from-beginning --timeout-ms 40000
   " 2>/dev/null || true)
 

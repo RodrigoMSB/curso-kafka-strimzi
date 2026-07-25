@@ -32,7 +32,7 @@ verificar "Clúster DR Ready en meridiano-dr (pods Running=${drpods})" "$r" "Amp
 # 3. MM2 Ready + round-trip de réplica: produce en pagos -> aparece en dr.
 mm2ready=$(kubectl get kafkamirrormaker2 pagos-a-dr -n "$NSP" --context "$CONTEXTO" -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)
 MARCA="repl-$(date +%s)-$$"
-kubectl exec cliente-kafka -n "$NSP" --context "$CONTEXTO" -- bash -c "echo '${MARCA}' | bin/kafka-console-producer.sh --bootstrap-server pagos-kafka-bootstrap:9094 --producer.config /props/app-pagos.properties --topic ${TOPICO}" >/dev/null 2>&1 || true
+kubectl exec cliente-kafka -n "$NSP" --context "$CONTEXTO" -- bash -c "echo '${MARCA}' | bin/kafka-console-producer.sh --bootstrap-server pagos-kafka-bootstrap:9094 --command-config /props/app-pagos.properties --topic ${TOPICO}" >/dev/null 2>&1 || true
 repl=""
 intento=1
 while [ "$intento" -le 4 ]; do

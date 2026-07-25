@@ -105,7 +105,7 @@ spec:
           set -u
           printf 'security.protocol=SASL_PLAINTEXT\nsasl.mechanism=SCRAM-SHA-512\nsasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username="%s" password="%s";\nenable.idempotence=false\nacks=all\n' "\$USUARIO" "\$PASSWORD" > /tmp/p.properties
           FIFO=/tmp/feed; rm -f "\$FIFO"; mkfifo "\$FIFO"
-          /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server "\$BOOTSTRAP" --producer.config /tmp/p.properties --topic "\$TOPICO" < "\$FIFO" &
+          /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server "\$BOOTSTRAP" --command-config /tmp/p.properties --topic "\$TOPICO" < "\$FIFO" &
           exec 3>"\$FIFO"
           n="\$START"
           while true; do

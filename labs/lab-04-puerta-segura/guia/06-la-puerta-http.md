@@ -92,7 +92,7 @@ kubectl run ver-kafka --rm -i --restart=Never -n meridiano-pagos \
   --image=quay.io/strimzi/kafka:0.51.0-kafka-4.2.0 --command -- bash -c "
   printf 'security.protocol=SASL_PLAINTEXT\nsasl.mechanism=SCRAM-SHA-512\nsasl.jaas.config=org.apache.kafka.common.security.scram.ScramLoginModule required username=\"bridge-http\" password=\"$PW\";\n' > /tmp/c.properties
   bin/kafka-console-consumer.sh --bootstrap-server pagos-kafka-bootstrap:9094 \
-    --consumer.config /tmp/c.properties --topic pagos.meridiano.http \
+    --command-config /tmp/c.properties --topic pagos.meridiano.http \
     --from-beginning --timeout-ms 15000"
 ```
 

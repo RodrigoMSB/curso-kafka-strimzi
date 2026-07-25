@@ -29,11 +29,12 @@ válida (el certificado es bueno), pero el permiso no existe.
 `app-pagos` solo tiene Write. Si intenta **consumir**, también debe fallar:
 
 ```bash
-kubectl exec cliente-kafka -n meridiano-pagos -- bin/kafka-console-consumer.sh \
-  --bootstrap-server pagos-kafka-bootstrap:9094 \
-  --command-config /props/app-pagos.properties \
-  --topic pagos.meridiano.transacciones --group intento \
-  --from-beginning --timeout-ms 10000
+kubectl exec cliente-kafka -n meridiano-pagos -- bash -c \
+  'bin/kafka-console-consumer.sh \
+   --bootstrap-server pagos-kafka-bootstrap:9094 \
+   --command-config /props/app-pagos.properties \
+   --topic pagos.meridiano.transacciones --group intento \
+   --from-beginning --timeout-ms 10000'
 ```
 
 ```text

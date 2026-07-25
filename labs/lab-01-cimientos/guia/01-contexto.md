@@ -55,6 +55,19 @@ PostgreSQL + Prometheus + Grafana, ≈ 7,5 GiB; el Lab 06 pesa ≈ 6,25 GiB). Po
   rebalanceo); 8 GB alcanza para los labs 01–06. El verificador de abajo te avisa
   si Docker tiene menos de 10 GB.
 
+## Si trabajas en Windows con Git Bash
+
+Ejecuta una vez por terminal:
+
+```bash
+export MSYS_NO_PATHCONV=1
+```
+
+Git Bash reescribe las rutas tipo `/props/...` a rutas de Windows y eso rompe los
+comandos que las pasan a un contenedor. En macOS y Linux no hace falta (la variable
+es inocua). Los scripts del curso ya se blindan solos; esto es para los comandos que
+teclees a mano.
+
 ## Antes de continuar: verifica tu entorno
 
 Ejecuta el verificador de entorno y confirma que todo aparezca en verde:

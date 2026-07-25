@@ -86,13 +86,13 @@ else
   MARCA="humo-$(date +%s)-$$"
   kexec bash -c "echo '${MARCA}' | bin/kafka-console-producer.sh \
     --bootstrap-server pagos-kafka-bootstrap:9094 \
-    --producer.config /props/app-pagos.properties \
+    --command-config /props/app-pagos.properties \
     --topic ${TOPICO}" >/dev/null 2>&1 || true
-  consumido=$(kexec bin/kafka-console-consumer.sh \
+  consumido=$(kexec bash -c "bin/kafka-console-consumer.sh \
     --bootstrap-server pagos-kafka-bootstrap:9093 \
-    --consumer.config /props/motor-fraude.properties \
-    --topic "${TOPICO}" --group fraude.deteccion \
-    --from-beginning --timeout-ms 25000 2>/dev/null || true)
+    --command-config /props/motor-fraude.properties \
+    --topic ${TOPICO} --group fraude.deteccion \
+    --from-beginning --timeout-ms 25000" 2>/dev/null || true)
   if printf '%s' "$consumido" | grep -q "$MARCA"; then r=0; else r=1; fi
 fi
 verificar "Round-trip autenticado (app-pagos produce SCRAM, motor-fraude consume mTLS)" "$r" \
@@ -109,12 +109,12 @@ else
   MARCA_NEG="no-debe-pasar-$(date +%s)-$$"
   salida=$(kexec bash -c "echo '${MARCA_NEG}' | bin/kafka-console-producer.sh \
     --bootstrap-server pagos-kafka-bootstrap:9093 \
-    --producer.config /props/motor-fraude.properties \
+    --command-config /props/motor-fraude.properties \
     --topic ${TOPICO}" 2>&1 || true)
-  llego=$(kexec bin/kafka-console-consumer.sh \
+  llego=$(kexec bash -c "bin/kafka-console-consumer.sh \
     --bootstrap-server pagos-kafka-bootstrap:9093 \
-    --consumer.config /props/motor-fraude.properties \
-    --topic "${TOPICO}" --group fraude.deteccion --timeout-ms 15000 2>/dev/null \
+    --command-config /props/motor-fraude.properties \
+    --topic ${TOPICO} --group fraude.deteccion --timeout-ms 15000" 2>/dev/null \
     | grep -c "${MARCA_NEG}" || true)
   if [ "$llego" -gt 0 ]; then
     r=1; pista6="motor-fraude PRODUJO de verdad (su mensaje llegó al tópico): las ACLs no son de mínimo privilegio (guía 05)."
