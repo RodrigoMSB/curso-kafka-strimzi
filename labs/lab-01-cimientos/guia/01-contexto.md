@@ -57,16 +57,21 @@ PostgreSQL + Prometheus + Grafana, ≈ 7,5 GiB; el Lab 06 pesa ≈ 6,25 GiB). Po
 
 ## Si trabajas en Windows con Git Bash
 
-Ejecuta una vez por terminal:
+Git Bash (MSYS2) reescribe las rutas que van como argumento directo de `kubectl exec`
+antes de que lleguen al contenedor: `/props/x.properties` se convierte en
+`C:/Program Files/Git/props/x.properties` y el comando falla con `NoSuchFileException`.
 
-```bash
-export MSYS_NO_PATHCONV=1
-```
+**El curso ya lo resuelve.** Los comandos afectados van envueltos en `bash -c '...'`, de
+modo que la ruta viaja dentro de una cadena que MSYS no inspecciona. No tienes que hacer
+nada: copia los comandos tal como aparecen en las guías.
 
-Git Bash reescribe las rutas tipo `/props/...` a rutas de Windows y eso rompe los
-comandos que las pasan a un contenedor. En macOS y Linux no hace falta (la variable
-es inocua). Los scripts del curso ya se blindan solos; esto es para los comandos que
-teclees a mano.
+> ⚠️ **No exportes `MSYS_NO_PATHCONV=1`.** Esa variable apaga la conversión de rutas de
+> forma **global** y rompe `kind`, `helm` y `kubectl`, que **sí la necesitan**: son binarios
+> nativos de Windows y reciben rutas reales del disco (`/c/STRIMZI/...`) que deben llegarles
+> como `C:/STRIMZI/...`. Con la variable puesta, el primer comando del curso
+> (`bin/01-crear-cluster.sh`) falla con `The system cannot find the path specified`.
+> Si la tienes puesta en tu terminal o en tu `.bashrc`, quítala con
+> `unset MSYS_NO_PATHCONV` y abre una terminal nueva.
 
 ## Antes de continuar: verifica tu entorno
 

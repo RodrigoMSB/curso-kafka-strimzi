@@ -1,11 +1,8 @@
 #!/usr/bin/env bash
 # Funciones comunes para los scripts del Lab 04 de Banco Meridiano.
 
-# Git Bash (MSYS2) reescribe los argumentos que parecen rutas Unix a rutas Windows
-# antes de pasarlos al comando. Eso rompe cualquier '--command-config /props/...' que
-# viaje como argumento directo de 'kubectl exec'. Desactivarlo es inocuo en macOS y
-# Linux (la variable simplemente no se usa).
-export MSYS_NO_PATHCONV=1
+# Nota: NO exportar MSYS_NO_PATHCONV. Rompe kind/helm/kubectl en Git Bash.
+# El bug de rutas de MSYS2 se resuelve envolviendo los comandos en: bash -c '...'
 
 msg_ok()    { printf '[OK] %s\n' "$*"; }
 msg_info()  { printf '[INFO] %s\n' "$*"; }

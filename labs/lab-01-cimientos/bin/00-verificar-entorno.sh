@@ -5,11 +5,6 @@ set -euo pipefail
 
 DIR_SCRIPT="$(cd "$(dirname "$0")" && pwd)"
 
-# Se captura ANTES de cargar lib-comunes.sh, porque esa librería exporta
-# MSYS_NO_PATHCONV=1 para blindar los scripts. Sin esta foto previa, el aviso 2c
-# nunca podría distinguir si el alumno ya la tenía puesta en SU terminal.
-msys_previo="${MSYS_NO_PATHCONV:-}"
-
 . "$DIR_SCRIPT/lib-comunes.sh"
 
 msg_info "Verificación del entorno para el Lab 01 (no se instala nada)."
@@ -130,21 +125,26 @@ fi
 
 # 2c. Git Bash (MSYS2) y la conversión de rutas. MSYS reescribe los argumentos que
 # parecen rutas Unix ('/props/...') a rutas de Windows antes de entregárselos al
-# comando, lo que rompe los 'kubectl exec ... --command-config /props/...' de las
-# guías. Los scripts del curso se blindan solos (lib-comunes.sh exporta la
-# variable), pero los comandos que el alumno teclea en SU terminal no. Es un aviso
-# [INFO], no un [ERROR]: no suma al contador ni bloquea — mismo criterio que 1b/2b.
-case "$(uname -s 2>/dev/null || true)" in
-  MINGW*|MSYS*)
-    if [ -z "$msys_previo" ]; then
-      msg_info "Git Bash detectado y MSYS_NO_PATHCONV no está definida en esta terminal."
-      msg_info "Ejecuta 'export MSYS_NO_PATHCONV=1' una vez por terminal: sin ella, Git Bash convierte rutas como /props/... a rutas de Windows y los comandos de las guías fallan con 'NoSuchFileException: C:/Program Files/Git/props/...'."
-      msg_info "Los scripts del curso ya se blindan solos; el aviso es para los comandos que teclees a mano."
-    else
-      msg_ok "Git Bash detectado con MSYS_NO_PATHCONV ya definida en la terminal."
-    fi
-    ;;
-esac
+# comando. Las guías ya lo resuelven envolviendo esos comandos en bash -c '...',
+# donde la ruta viaja dentro de una cadena que MSYS no inspecciona.
+# Lo que NO hay que hacer es apagar la conversión globalmente: kind, helm y kubectl
+# son binarios nativos de Windows y SÍ la necesitan para leer archivos del disco.
+# Por eso esto es un [ERROR] que suma al contador: rompe el Lab 01 en su primer
+# comando, antes de que exista el clúster.
+if [ -n "${MSYS_NO_PATHCONV:-}" ]; then
+  msg_error "MSYS_NO_PATHCONV está definida en tu terminal."
+  msg_info "Esa variable apaga la conversión de rutas de forma global y rompe kind, helm y kubectl: no encuentran los archivos del disco y fallan con 'The system cannot find the path specified'."
+  msg_info "Quítala con: unset MSYS_NO_PATHCONV"
+  msg_info "Y si está en tu ~/.bashrc, elimina la línea y abre una terminal nueva."
+  errores=$((errores + 1))
+else
+  case "$(uname -s 2>/dev/null || true)" in
+    MINGW*|MSYS*)
+      msg_ok "Git Bash detectado sin MSYS_NO_PATHCONV: es la configuración correcta."
+      msg_info "Si un comando de las guías falla con 'NoSuchFileException: C:/Program Files/Git/props/...', NO exportes esa variable: usa el comando envuelto en bash -c '...' tal como aparece en la guía."
+      ;;
+  esac
+fi
 
 # 3. Conectividad básica: resolución de strimzi.io.
 if verificar_comando nslookup && nslookup strimzi.io >/dev/null 2>&1; then

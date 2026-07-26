@@ -23,10 +23,12 @@ Todavía no le encargaremos nada: eso es el Lab 02.
 - `kind` **v0.32.0 o superior**, `kubectl` y `helm` instalados (ver el documento de setup del curso). La versión de kind importa: v0.32.0 es la que publica el digest pineado de `kindest/node:v1.34.8` que usa el curso.
 - Conexión a Internet (descarga de la imagen del nodo y del chart del operador).
 
-> **Si trabajas en Windows con Git Bash:** ejecuta una vez por terminal
-> `export MSYS_NO_PATHCONV=1`. Git Bash reescribe las rutas tipo `/props/...` a rutas de
-> Windows y eso rompe los comandos que las pasan a un contenedor. En macOS y Linux no hace
-> falta (la variable es inocua).
+> **Si trabajas en Windows con Git Bash:** Git Bash (MSYS2) reescribe las rutas tipo
+> `/props/...` a rutas de Windows antes de pasarlas al contenedor. **El curso ya lo resuelve**
+> envolviendo esos comandos en `bash -c '...'`, así que no tienes que hacer nada.
+> ⚠️ **No exportes `MSYS_NO_PATHCONV=1`:** esa variable apaga la conversión de rutas de forma
+> global y rompe `kind`, `helm` y `kubectl`, que **sí la necesitan** para leer archivos del
+> disco de Windows. Si la tienes en tu terminal o en tu `.bashrc`, quítala.
 
 ## Tiempo estimado
 

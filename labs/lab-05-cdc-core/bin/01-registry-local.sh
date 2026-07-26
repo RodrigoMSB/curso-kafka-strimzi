@@ -28,9 +28,10 @@ docker network connect kind "$REG_NAME" >/dev/null 2>&1 || true
 
 # 3. Configurar cada nodo para resolver kind-registry:5000 por HTTP (pull).
 for node in $(kind get nodes --name "$NOMBRE_CLUSTER"); do
-  docker exec "$node" mkdir -p "/etc/containerd/certs.d/${REG_NAME}:5000"
+  # MSYS_NO_PATHCONV en línea: las rutas son del contenedor, no del host (Git Bash).
+  MSYS_NO_PATHCONV=1 docker exec "$node" mkdir -p "/etc/containerd/certs.d/${REG_NAME}:5000"
   echo "[host.\"http://${REG_NAME}:5000\"]" \
-    | docker exec -i "$node" cp /dev/stdin "/etc/containerd/certs.d/${REG_NAME}:5000/hosts.toml"
+    | MSYS_NO_PATHCONV=1 docker exec -i "$node" cp /dev/stdin "/etc/containerd/certs.d/${REG_NAME}:5000/hosts.toml"
 done
 
 # 4. ConfigMap informativo (patrón oficial de kind).

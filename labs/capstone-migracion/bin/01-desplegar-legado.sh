@@ -36,7 +36,8 @@ fi
 # 1. Arrancar el contenedor del Kafka legado en la red de kind.
 msg_info "Arrancando el Kafka legado '${LEGADO_NOMBRE}' en la red '${RED_KIND}'..."
 docker rm -f "$LEGADO_NOMBRE" >/dev/null 2>&1 || true
-docker run -d --name "$LEGADO_NOMBRE" --network "$RED_KIND" \
+# MSYS_NO_PATHCONV en línea: las rutas son del contenedor, no del host (Git Bash).
+MSYS_NO_PATHCONV=1 docker run -d --name "$LEGADO_NOMBRE" --network "$RED_KIND" \
   -p "127.0.0.1:19092:9092" \
   -e LOG_DIR=/tmp/logs \
   -e KAFKA_HEAP_OPTS="-Xms256m -Xmx256m" \
@@ -70,7 +71,8 @@ msg_ok "Contenedor '${LEGADO_NOMBRE}' creado (host 127.0.0.1:19092; pods: ${LEGA
 msg_info "Esperando a que el broker legado responda..."
 arriba=0
 for i in $(seq 1 30); do
-  if docker exec "$LEGADO_NOMBRE" /opt/kafka/bin/kafka-broker-api-versions.sh \
+  # MSYS_NO_PATHCONV en línea: las rutas son del contenedor, no del host (Git Bash).
+  if MSYS_NO_PATHCONV=1 docker exec "$LEGADO_NOMBRE" /opt/kafka/bin/kafka-broker-api-versions.sh \
       --bootstrap-server localhost:9092 >/dev/null 2>&1; then
     arriba=1; break
   fi
@@ -84,7 +86,8 @@ msg_ok "Broker legado operativo."
 
 # 3. Tópico de historia + siembra de N mensajes (IDs 1..N).
 msg_info "Creando '${LEGADO_TOPICO}' (3 particiones, RF=1) y sembrando ${SEMILLA} mensajes..."
-docker exec "$LEGADO_NOMBRE" /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \
+# MSYS_NO_PATHCONV en línea: las rutas son del contenedor, no del host (Git Bash).
+MSYS_NO_PATHCONV=1 docker exec "$LEGADO_NOMBRE" /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 \
   --create --if-not-exists --topic "$LEGADO_TOPICO" --partitions 3 --replication-factor 1 >/dev/null 2>&1
 docker exec "$LEGADO_NOMBRE" bash -c '
   N='"$SEMILLA"'; i=1

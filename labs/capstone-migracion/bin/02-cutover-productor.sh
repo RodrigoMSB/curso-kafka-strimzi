@@ -45,9 +45,11 @@ fi
 
 # 1. Detener el productor del legado (parada controlada por archivo).
 msg_info "Cutover: deteniendo el productor del legado..."
-docker exec "$LEGADO_NOMBRE" touch /tmp/legado-stop
+# MSYS_NO_PATHCONV en línea: las rutas son del contenedor, no del host (Git Bash).
+MSYS_NO_PATHCONV=1 docker exec "$LEGADO_NOMBRE" touch /tmp/legado-stop
 sleep 3   # dejar que el loop termine su iteración en curso y persista el último ID.
-ULTIMO=$(docker exec "$LEGADO_NOMBRE" cat /tmp/legado-ultimo-id 2>/dev/null || true)
+# MSYS_NO_PATHCONV en línea: las rutas son del contenedor, no del host (Git Bash).
+ULTIMO=$(MSYS_NO_PATHCONV=1 docker exec "$LEGADO_NOMBRE" cat /tmp/legado-ultimo-id 2>/dev/null || true)
 if ! printf '%s' "$ULTIMO" | grep -q '^[0-9]\{1,\}$'; then
   msg_error "No pude leer el último ID del legado (/tmp/legado-ultimo-id='${ULTIMO}')."
   exit 1
