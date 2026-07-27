@@ -2,7 +2,7 @@
 
 | # | Problema | Causa típica | Solución |
 |---|----------|--------------|----------|
-| 1 | `kcat: command not found`. | kcat no está instalado en tu máquina. | `brew install kcat` (macOS) o `sudo apt-get install -y kcat` (Debian/Ubuntu/WSL2). |
+| 1 | `kcat: command not found`. | kcat no está instalado en tu máquina. | `brew install kcat` (macOS) o `sudo apt-get install -y kcat` (Debian/Ubuntu/WSL2). En **Windows/Git Bash** no hay binario nativo: corre `bash bin/00-verificar-prerrequisitos.sh`, que crea solo el puente a kcat en Ubuntu (WSL2) y deja `$HOME/bin` en tu `~/.bashrc`. Si ya lo creaste y esta terminal sigue sin encontrarlo, es que se abrió antes del cambio: abre una nueva o ejecuta `export PATH="$HOME/bin:$PATH"`. |
 | 2 | kcat no conecta: "Connection refused" a 127.0.0.1:32000. | **El error más probable**: tu clúster es anterior al mapeo de puertos del curso y no expone 32000–32007 al host. | Recrea el clúster con la topología nueva: `99` del Lab 01 + `95` del Lab 03. Confirma los mapeos con `docker port meridiano-control-plane`. |
 | 3 | Conecta al bootstrap pero falla al hablar con un broker ("connect to broker ... failed"). | `advertisedHost`/`advertisedPort` mal configurados: el broker anuncia una dirección que tu host no alcanza. | Verifica que cada broker anuncie `127.0.0.1:3200x` (status del CR) y que esos puertos estén mapeados. En el lab deben ser exactamente los del contrato (32001–32003, 32005–32007). |
 | 4 | "SSL handshake failed" / "broker certificate could not be verified". | La CA es la equivocada (o falta `ssl.ca.location`). | Vuelve a extraer la CA con `bin/01-extraer-credenciales.sh` y apunta `ssl.ca.location` a `credenciales/ca.crt`. Es la CA del clúster (`pagos-cluster-ca-cert`), no otra. |

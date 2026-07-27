@@ -18,6 +18,10 @@ listener plano).
 
 - **Lab 03 completado**. Si no, recupéralo con `labs/lab-03-topicos-identidad/bin/95-recuperar-lab.sh`.
 - **kcat instalado**: `brew install kcat` (macOS) o `sudo apt-get install -y kcat` (Debian/Ubuntu/WSL2).
+  En **Windows con Git Bash** no hay binario nativo de kcat: se usa el de **Ubuntu (WSL2)** a través de
+  un puente que `bin/00-verificar-prerrequisitos.sh` **crea solo** cuando hace falta, dejándolo en
+  `$HOME/bin/kcat` y añadiendo `$HOME/bin` a tu `~/.bashrc`. No tienes que hacer nada; si tu equipo no
+  tiene WSL2, el verificador te dice cómo instalarlo.
 - El clúster con los **mapeos de puerto** del curso (32000–32007). Si tu clúster es anterior, recréalo (el verificador te lo indica).
 - Verifica todo con: `bash bin/00-verificar-prerrequisitos.sh`.
 

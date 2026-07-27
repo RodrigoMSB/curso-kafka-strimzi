@@ -24,13 +24,42 @@ else
   errores=$((errores + 1))
 fi
 
-# 2. kcat instalado.
+# 2. kcat instalado. En Git Bash no existe binario nativo, así que si falta se
+# intenta crear el puente a WSL2 (bin/00b-puente-kcat.sh) sin que el alumno
+# tenga que saber que existe. En macOS y Linux el comportamiento no cambia.
+puente=0
+if ! verificar_comando kcat; then
+  case "$(uname -s 2>/dev/null || true)" in
+    MINGW*|MSYS*)
+      msg_info "kcat no responde. Intentando crear el puente a WSL2..."
+      if bash "$DIR_SCRIPT/00b-puente-kcat.sh"; then
+        # El puente vive en $HOME/bin; añadirlo al PATH de ESTA ejecución basta
+        # para que el resto del verificador y el test 90 lo encuentren.
+        PATH="$HOME/bin:$PATH"
+        puente=1
+      fi
+      ;;
+  esac
+fi
 if verificar_comando kcat; then
-  msg_ok "kcat presente: $(kcat -V 2>&1 | head -1)"
+  if [ "$puente" -eq 1 ]; then
+    msg_ok "kcat operativo vía el puente a WSL2: $(kcat -V 2>&1 | head -1)"
+    msg_info "El puente quedó en \$HOME/bin/kcat y \$HOME/bin ya está en tu ~/.bashrc."
+  else
+    msg_ok "kcat presente: $(kcat -V 2>&1 | head -1)"
+  fi
 else
-  msg_error "kcat no está instalado. Instálalo:"
-  msg_error "  macOS:        brew install kcat"
-  msg_error "  Debian/Ubuntu (WSL2): sudo apt-get install -y kcat"
+  case "$(uname -s 2>/dev/null || true)" in
+    MINGW*|MSYS*)
+      # El puente ya explicó arriba qué falta y cómo resolverlo.
+      msg_error "kcat sigue sin estar disponible (revisa el detalle del puente, más arriba)."
+      ;;
+    *)
+      msg_error "kcat no está instalado. Instálalo:"
+      msg_error "  macOS:        brew install kcat"
+      msg_error "  Debian/Ubuntu (WSL2): sudo apt-get install -y kcat"
+      ;;
+  esac
   errores=$((errores + 1))
 fi
 

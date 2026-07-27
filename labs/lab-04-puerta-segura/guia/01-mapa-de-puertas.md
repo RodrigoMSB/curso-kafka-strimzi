@@ -18,6 +18,8 @@ las instrucciones que imprime el script.
 > **kcat** es un cliente de Kafka de línea de comandos, liviano, que correremos
 > desde **tu terminal** (fuera del clúster). Instálalo con `brew install kcat`
 > (macOS) o `sudo apt-get install -y kcat` (Debian/Ubuntu/WSL2).
+> En **Windows**, el verificador de prerrequisitos configura kcat automáticamente
+> (lo usa desde Ubuntu/WSL2, porque no existe binario nativo para Windows).
 
 ## Los tipos de listener
 
