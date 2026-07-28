@@ -1,13 +1,15 @@
 #!/usr/bin/env bash
 # Verifica que el entorno local tenga todo lo necesario para el Lab 01.
-# No instala nada: solo comprueba y reporta.
+# Comprueba y reporta. La única excepción es kind: si falta o es anterior al
+# mínimo del curso, se instala solo en $HOME/bin (bin/00c-instalar-kind.sh),
+# porque no viene en la imagen base de las VMs y sin él no hay clúster.
 set -euo pipefail
 
 DIR_SCRIPT="$(cd "$(dirname "$0")" && pwd)"
 
 . "$DIR_SCRIPT/lib-comunes.sh"
 
-msg_info "Verificación del entorno para el Lab 01 (no se instala nada)."
+msg_info "Verificación del entorno para el Lab 01 (solo kind se instala si falta)."
 echo
 
 errores=0
@@ -43,6 +45,33 @@ esac
 # 2. Herramientas presentes, imprimiendo su versión.
 # kind debe ser v0.32.0 o superior: es la release que publica el digest pineado
 # de kindest/node:v1.34.8 y el containerd compatible.
+#
+# kind no viene en la imagen base de las VMs del curso ni está en Chocolatey o
+# WinGet en la versión requerida, así que si falta (o es anterior al mínimo) se
+# instala solo con bin/00c-instalar-kind.sh. El alumno no tiene que saber que
+# el instalador existe: corre el verificador y funciona.
+instalado_kind=0
+kind_hay=0; verificar_comando kind && kind_hay=1
+if [ "$kind_hay" -eq 1 ]; then
+  kv_previa=$(kind version 2>/dev/null | grep -oE 'v[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+  case "${kv_previa}" in
+    v0.3[2-9].*|v0.[4-9][0-9].*|v[1-9]*) ;;   # >= v0.32.0: nada que hacer
+    *) kind_hay=0 ;;                          # anterior al mínimo: reinstalar
+  esac
+fi
+if [ "$kind_hay" -eq 0 ]; then
+  msg_info "kind falta o es anterior al mínimo del curso. Instalándolo automáticamente..."
+  if bash "$DIR_SCRIPT/00c-instalar-kind.sh"; then
+    # El instalador deja el binario en $HOME/bin; añadirlo al PATH de ESTA
+    # ejecución basta para que el resto del verificador lo encuentre.
+    PATH="$HOME/bin:$PATH"
+    instalado_kind=1
+  fi
+fi
+if [ "$instalado_kind" -eq 1 ]; then
+  msg_info "kind se instaló automáticamente en \$HOME/bin (y \$HOME/bin quedó en tu ~/.bashrc)."
+fi
+
 if verificar_comando kind; then
   kind_ver_raw=$(kind version 2>/dev/null)
   msg_ok "kind presente: ${kind_ver_raw}"
@@ -72,7 +101,8 @@ if verificar_comando kind; then
     fi
   fi
 else
-  msg_error "Falta el comando: kind"
+  # El instalador ya explicó arriba qué falló y cuál es la vía manual.
+  msg_error "Falta el comando: kind (la instalación automática no prosperó; revisa el detalle de arriba)."
   errores=$((errores + 1))
 fi
 

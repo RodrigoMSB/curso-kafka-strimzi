@@ -83,7 +83,7 @@ bash bin/00-verificar-entorno.sh
 
 ```text
 Salida esperada (puede variar levemente)
-[INFO] Verificación del entorno para el Lab 01 (no se instala nada).
+[INFO] Verificación del entorno para el Lab 01 (solo kind se instala si falta).
 
 [OK] Docker está accesible y corriendo.
 [OK] kind presente: kind v0.32.0 go1.26.3 darwin/arm64
@@ -97,6 +97,11 @@ Salida esperada (puede variar levemente)
 
 La versión exacta de `kubectl`, `kind` y `helm` puede variar según tu equipo;
 lo importante es que cada línea aparezca en verde.
+
+> **Si te falta `kind`**, el verificador lo descarga solo en `$HOME/bin` (sin permisos de
+> administrador) y añade `$HOME/bin` a tu `~/.bashrc`. Verás unas líneas extra de instalación
+> antes del resto de la salida. Si la descarga falla —proxy corporativo, por ejemplo—, el
+> propio script te imprime la vía manual, que sigue siendo válida como plan B.
 
 Si tu `kubectl` es dos o más *minors* más nuevo que la versión del clúster (por
 ejemplo, un kubectl 1.36 con los nodos fijados en 1.34), verás además un aviso
