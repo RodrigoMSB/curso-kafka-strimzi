@@ -169,16 +169,56 @@ if [ "$necesita_recrear" -eq 1 ]; then
   recrear_cluster
 fi
 
-# Aplica el estado final y espera a que el clúster quede Ready. Devuelve 1 si no
-# lo consigue dentro del timeout.
-aplicar_estado_final() {
-  msg_info "Aplicando el clúster de pagos (persistente + rack)..."
-  kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL_PERSISTENTE"
-  kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL_RACK"
+# Espera a que el clúster refleje DE VERDAD el último cambio aplicado.
+#
+# Un 'kubectl wait --for=condition=Ready' a secas no sirve justo después de un
+# apply: el CR conserva el Ready de la reconciliación anterior, así que el wait
+# vuelve de inmediato, antes de que el operador haya empezado siquiera el
+# rolling. Por eso se exige además que observedGeneration haya alcanzado a
+# metadata.generation: es lo que el operador actualiza cuando TERMINA de
+# reconciliar el spec actual. Al final se rematan los pods, que es lo que mira
+# el test 90.
+#
+# El argumento es el número de vueltas de 5s (120 -> 600s).
+esperar_kafka_listo() {
+  vueltas_max="$1"
+  vuelta=0
+  while [ "$vuelta" -lt "$vueltas_max" ]; do
+    gen=$(kubectl get kafka "$CLUSTER" -n "$NS" --context "$CONTEXTO" \
+      -o jsonpath='{.metadata.generation}' 2>/dev/null || true)
+    obs=$(kubectl get kafka "$CLUSTER" -n "$NS" --context "$CONTEXTO" \
+      -o jsonpath='{.status.observedGeneration}' 2>/dev/null || true)
+    ready=$(kubectl get kafka "$CLUSTER" -n "$NS" --context "$CONTEXTO" \
+      -o jsonpath='{.status.conditions[?(@.type=="Ready")].status}' 2>/dev/null || true)
+    if [ -n "$gen" ] && [ "$gen" = "$obs" ] && [ "$ready" = "True" ]; then
+      kubectl wait --for=condition=Ready pod -l "strimzi.io/cluster=${CLUSTER}" \
+        -n "$NS" --context "$CONTEXTO" --timeout=300s >/dev/null 2>&1 || true
+      return 0
+    fi
+    vuelta=$((vuelta + 1))
+    sleep 5
+  done
+  return 1
+}
 
+# Paso 1 del estado final: nodepools persistentes + Kafka de la parte 2 (todavía
+# SIN rack). Devuelve 1 si el clúster no queda Ready dentro del timeout.
+aplicar_persistente() {
+  msg_info "Aplicando el clúster de pagos (storage persistente, aún sin rack)..."
+  kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL_PERSISTENTE"
   msg_info "Esperando a que el clúster Kafka esté Ready (máximo ${TIMEOUT_KAFKA}, la primera vez baja la imagen)..."
-  kubectl wait --for=condition=Ready "kafka/${CLUSTER}" -n "$NS" --context "$CONTEXTO" \
-    --timeout="$TIMEOUT_KAFKA"
+  esperar_kafka_listo 120
+}
+
+# Paso 2 del estado final: el rack, en un apply APARTE y sobre un clúster ya
+# levantado. Activar rack es un cambio en caliente y el operador lo resuelve con
+# un rolling update ordenado (guía 05); separarlo del apply anterior evita que
+# el rack viaje mezclado con la creación del clúster.
+aplicar_rack() {
+  msg_info "Aplicando el rack awareness sobre el clúster ya en marcha..."
+  kubectl apply -n "$NS" --context "$CONTEXTO" -f "$SOL_RACK"
+  msg_info "Esperando a que el clúster vuelva a Ready tras el rolling del rack..."
+  esperar_kafka_listo 120
 }
 
 # ¿Los brokers están muriendo porque su disco trae el cluster.id de otro
@@ -206,12 +246,12 @@ EOF
   [ "$hallazgos" -gt 0 ]
 }
 
-# 4/5. Aplicar el estado final: nodepools persistentes (parte 2) + Kafka con
-#      rack (parte 3), y esperar a que quede Ready. El recuperador no separa los
-#      estados como las guías porque no enseña: reconstruye el resultado en un
-#      solo paso.
-if aplicar_estado_final; then
-  msg_ok "Clúster Kafka Ready."
+# 4. Levantar el clúster persistente (parte 2), todavía sin rack. El recuperador
+#    no separa los estados como las guías porque no enseña, pero sí separa el
+#    storage del rack: son cambios de naturaleza distinta (uno obliga a recrear,
+#    el otro es en caliente) y mezclarlos en un mismo apply enturbia la espera.
+if aplicar_persistente; then
+  msg_ok "Clúster Kafka Ready (persistente)."
 else
   # Última red de seguridad: el clúster puede no arrancar porque unos PVCs
   # heredados traen el cluster.id de un clúster anterior (pasa si el alumno
@@ -224,8 +264,8 @@ else
     msg_info "Son discos heredados de un clúster ya borrado y no se pueden reutilizar."
     msg_info "Destruyendo y reconstruyendo sobre discos limpios (los datos de prueba se pierden)..."
     recrear_cluster
-    if aplicar_estado_final; then
-      msg_ok "Clúster Kafka Ready."
+    if aplicar_persistente; then
+      msg_ok "Clúster Kafka Ready (persistente)."
     else
       msg_error "El clúster Kafka no quedó Ready en ${TIMEOUT_KAFKA}."
       msg_error "Revisa 'kubectl get pods -n ${NS}' y docs/troubleshooting.md."
@@ -236,6 +276,15 @@ else
     msg_error "Revisa 'kubectl get pods -n ${NS}' y docs/troubleshooting.md."
     exit 1
   fi
+fi
+
+# 5. El rack, en un apply aparte y con el clúster ya levantado.
+if aplicar_rack; then
+  msg_ok "Rack awareness aplicado; clúster Kafka Ready."
+else
+  msg_error "El clúster no volvió a Ready tras aplicar el rack en ${TIMEOUT_KAFKA}."
+  msg_error "Revisa 'kubectl get pods -n ${NS}' y docs/troubleshooting.md."
+  exit 1
 fi
 
 # 6. Crear el tópico de pagos (idempotente). Imagen tomada de un broker real.
